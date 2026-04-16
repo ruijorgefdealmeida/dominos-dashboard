@@ -1,0 +1,1570 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Domino's Pizza — Controlo Diário</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f1efe8;
+    --bg-info: #E6F1FB;
+    --text-primary: #2C2C2A;
+    --text-secondary: #5F5E5A;
+    --text-info: #185FA5;
+    --border-light: rgba(0,0,0,0.13);
+    --border-mid: rgba(0,0,0,0.28);
+    --border-info: #378ADD;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1e1e1c;
+      --bg-secondary: #2C2C2A;
+      --bg-info: #0C447C;
+      --text-primary: #f1efe8;
+      --text-secondary: #B4B2A9;
+      --text-info: #85B7EB;
+      --border-light: rgba(255,255,255,0.12);
+      --border-mid: rgba(255,255,255,0.25);
+      --border-info: #378ADD;
+    }
+  }
+  [data-theme="dark"] {
+    --bg-primary: #1e1e1c;
+    --bg-secondary: #2C2C2A;
+    --bg-info: #0C447C;
+    --text-primary: #f1efe8;
+    --text-secondary: #B4B2A9;
+    --text-info: #85B7EB;
+    --border-light: rgba(255,255,255,0.12);
+    --border-mid: rgba(255,255,255,0.25);
+    --border-info: #378ADD;
+  }
+  [data-theme="light"] {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f1efe8;
+    --bg-info: #E6F1FB;
+    --text-primary: #2C2C2A;
+    --text-secondary: #5F5E5A;
+    --text-info: #185FA5;
+    --border-light: rgba(0,0,0,0.13);
+    --border-mid: rgba(0,0,0,0.28);
+    --border-info: #378ADD;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: var(--font);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 0;
+  }
+  .app-header {
+    background: var(--bg-primary);
+    border-bottom: 0.5px solid var(--border-light);
+    padding: 14px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .app-header h1 { font-size: 15px; font-weight: 500; color: var(--text-primary); }
+  .app-header p { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .header-right { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px 20px 60px; }
+
+  /* buttons */
+  button {
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 5px 14px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  button:hover { background: var(--bg-secondary); }
+  button:active { transform: scale(0.98); }
+  button.active { background: var(--bg-info); color: var(--text-info); border-color: var(--border-info); }
+  button.btn-danger { color: #A32D2D; border-color: #F09595; }
+  button.btn-danger:hover { background: #FCEBEB; }
+  button.btn-sm { font-size: 10px; padding: 2px 8px; }
+  button.btn-save { font-size: 13px; padding: 7px 20px; }
+
+  /* tab nav */
+  .tab-nav { display: flex; gap: 4px; border-bottom: 0.5px solid var(--border-light); margin-bottom: 1.5rem; padding-bottom: 0; }
+  .tab-btn {
+    font-size: 13px; padding: 7px 16px;
+    border: none; border-radius: 0; background: none;
+    color: var(--text-secondary);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -0.5px;
+  }
+  .tab-btn:hover { background: var(--bg-secondary); color: var(--text-primary); }
+  .tab-btn.active { color: var(--text-primary); border-bottom-color: #185FA5; font-weight: 500; }
+
+  /* kpi grid */
+  .kpi-g { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 12px; }
+  .kpi { background: var(--bg-secondary); border-radius: var(--radius-md); padding: .85rem 1rem; }
+  .kpi-lbl { font-size: 11px; color: var(--text-secondary); margin-bottom: 3px; }
+  .kpi-val { font-size: 19px; font-weight: 500; color: var(--text-primary); line-height: 1.2; }
+  .kpi-sub { font-size: 11px; margin-top: 3px; }
+
+  /* cards */
+  .card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 1rem 1.25rem; }
+  .ct { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: .75rem; }
+  .card-sub { font-size: 11px; color: var(--text-secondary); margin-top: -8px; margin-bottom: 10px; }
+
+  /* grids */
+  .g2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; margin-bottom: 14px; }
+
+  /* legend */
+  .leg { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .leg span { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); }
+  .leg i { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; display: inline-block; }
+
+  /* mini bars */
+  .mb-row { display: grid; grid-template-columns: 50px 1fr 46px; gap: 6px; align-items: center; margin-bottom: 6px; }
+  .mb-bg { background: var(--bg-secondary); border-radius: 3px; height: 18px; overflow: hidden; }
+  .mb-f { height: 100%; border-radius: 3px; }
+
+  /* badges */
+  .b { display: inline-block; font-size: 10px; padding: 2px 6px; border-radius: 6px; font-weight: 500; white-space: nowrap; }
+  .b-ok { background: #EAF3DE; color: #27500A; }
+  .b-w  { background: #FAEEDA; color: #633806; }
+  .b-dn { background: #FCEBEB; color: #791F1F; }
+  .b-n  { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  /* insights */
+  .ins { padding: 9px 12px; border-radius: var(--radius-md); margin-bottom: 8px; }
+  .ins .it { font-size: 12px; font-weight: 500; }
+  .ins .is { font-size: 11px; margin-top: 2px; }
+  .ins-w { background: #FAEEDA; color: #633806; }
+  .ins-g { background: #EAF3DE; color: #27500A; }
+  .ins-n { background: var(--bg-secondary); color: var(--text-secondary); }
+
+  /* form */
+  .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 1rem; }
+  .ff label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .ff input {
+    width: 100%; font-size: 13px; padding: 7px 10px;
+    border: 0.5px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font);
+  }
+  .ff input:focus { outline: none; border-color: var(--border-info); box-shadow: 0 0 0 2px rgba(55,138,221,0.2); }
+  .ff input[readonly] { color: var(--text-secondary); }
+  .form-hint { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+
+  /* table */
+  .tbl-wrap { border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow-x: auto; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 860px; }
+  th { background: var(--bg-secondary); color: var(--text-secondary); font-weight: 500; padding: 8px 10px; text-align: left; white-space: nowrap; }
+  td { padding: 7px 10px; color: var(--text-primary); border-top: 0.5px solid var(--border-light); }
+  tr:hover td { background: var(--bg-secondary); }
+
+  /* donut legend */
+  .canal-leg { display: flex; flex-direction: column; gap: 10px; }
+  .cl-row { display: flex; align-items: center; justify-content: space-between; gap: 20px; font-size: 12px; }
+  .cl-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* theme toggle */
+  .theme-btn { font-size: 11px; padding: 4px 10px; }
+
+  /* color helpers */
+  .c-ok { color: #3B6D11; }
+  .c-w  { color: #BA7517; }
+  .c-dn { color: #A32D2D; }
+  .c-sec { color: var(--text-secondary); }
+
+  /* projection */
+  .proj-wrap { display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+  .proj-main { flex:1; min-width:180px; }
+  .proj-val  { font-size:28px; font-weight:600; color:var(--text-primary); line-height:1.1; }
+  .proj-badge { display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; padding:3px 10px; border-radius:20px; margin-top:6px; }
+  .proj-up   { background:#EAF3DE; color:#27500A; }
+  .proj-dn   { background:#FCEBEB; color:#791F1F; }
+  .proj-ok   { background:#E6F1FB; color:#185FA5; }
+  .proj-bars { flex:2; min-width:200px; }
+  .proj-bar-row { display:grid; grid-template-columns:80px 1fr 70px; gap:6px; align-items:center; margin-bottom:5px; font-size:11px; }
+  .proj-hint { font-size:10px; color:var(--text-secondary); margin-top:8px; }
+
+  /* loading overlay */
+  .loading-overlay {
+    display: none; position: fixed; inset: 0; z-index: 999;
+    background: rgba(0,0,0,.45); backdrop-filter: blur(3px);
+    align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  }
+  .loading-box {
+    background: var(--bg-primary); border-radius: var(--radius-lg);
+    padding: 28px 40px; text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,.25);
+  }
+  .loading-spinner {
+    width: 32px; height: 32px; border: 3px solid var(--border-light);
+    border-top-color: #378ADD; border-radius: 50%;
+    animation: spin .7s linear infinite; margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-msg { font-size: 13px; color: var(--text-secondary); }
+
+  /* spacing */
+  .mb-14 { margin-bottom: 14px; }
+  .mb-10 { margin-bottom: 10px; }
+
+  @media (max-width: 700px) {
+    .kpi-g { grid-template-columns: repeat(2,1fr); }
+    .g2 { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: repeat(2,1fr); }
+    .app-header { padding: 12px 16px; }
+    .container { padding: 16px 12px 60px; }
+  }
+  @media (max-width: 400px) {
+    .kpi-g { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <p class="loading-msg" id="loading-msg">A carregar...</p>
+  </div>
+</div>
+
+<header class="app-header">
+  <div>
+    <h1>Domino's Pizza — Controlo Diário</h1>
+    <p id="hdr-sub">A carregar dados...</p>
+  </div>
+  <div class="header-right">
+    <button class="tab-btn active" id="t-dash" onclick="showTab('dash')">Dashboard</button>
+    <button class="tab-btn" id="t-reg"  onclick="showTab('reg')">+ Registar dia</button>
+    <button class="tab-btn" id="t-hist" onclick="showTab('hist')">Histórico</button>
+    <button class="tab-btn" id="t-sem"  onclick="showTab('sem')">Semanal</button>
+    <button class="tab-btn" id="t-men"  onclick="showTab('men')">Mensal</button>
+    <button class="tab-btn" id="t-ano"  onclick="showTab('ano')">Anual</button>
+    <button class="theme-btn" onclick="toggleTheme()" id="themeBtn">Modo escuro</button>
+  </div>
+</header>
+
+<main class="container">
+
+<!-- ════════════════════ DASHBOARD ════════════════════ -->
+<div id="tab-dash">
+
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Faturação (7 dias)</p><p class="kpi-val" id="k-fat">—</p><p class="kpi-sub" id="k-fat-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Pedidos (7 dias)</p><p class="kpi-val" id="k-ped">—</p><p class="kpi-sub" id="k-ped-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Ticket médio</p><p class="kpi-val" id="k-tick">—</p><p class="kpi-sub" id="k-tick-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Melhor dia (semana)</p><p class="kpi-val" id="k-best">—</p><p class="kpi-sub" id="k-best-s" class="c-sec"></p></div>
+  </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Entrega média</p><p class="kpi-val" id="k-ent">—</p><p class="kpi-sub" id="k-ent-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Cancelamentos</p><p class="kpi-val" id="k-can">—</p><p class="kpi-sub" id="k-can-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">% Agregadores</p><p class="kpi-val" id="k-agr">—</p><p class="kpi-sub" id="k-agr-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Food cost</p><p class="kpi-val" id="k-fc">—</p><p class="kpi-sub" id="k-fc-s"></p></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <p class="ct">Evolução — faturação e pedidos</p>
+      <div class="leg">
+        <span><i style="background:#378ADD;"></i>Faturação (€)</span>
+        <span><i style="background:#1D9E75;"></i>Pedidos (eixo dir.)</span>
+      </div>
+      <div style="position:relative;width:100%;height:210px;"><canvas id="cTrend" role="img" aria-label="Evolução de faturação e pedidos por dia">Sem dados</canvas></div>
+    </div>
+    <div class="card">
+      <p class="ct">Mix de canal (7 dias)</p>
+      <div style="display:flex;gap:20px;align-items:center;justify-content:center;padding-top:6px;">
+        <div style="position:relative;height:160px;width:160px;flex-shrink:0;"><canvas id="cCanal" role="img" aria-label="Distribuição por canal">Sem dados</canvas></div>
+        <div class="canal-leg" id="cLeg"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <p class="ct">Performance por dia da semana</p>
+      <p class="card-sub">Faturação média — histórico completo</p>
+      <div id="dowBars"></div>
+    </div>
+    <div class="card">
+      <p class="ct">Indicadores operacionais</p>
+      <div id="addKPIs"></div>
+    </div>
+  </div>
+
+  <div class="card mb-14">
+    <p class="ct">Alertas e insights automáticos</p>
+    <div id="insights"></div>
+  </div>
+
+</div>
+
+<!-- ════════════════════ REGISTAR ════════════════════ -->
+<div id="tab-reg" style="display:none;">
+  <div class="card">
+    <p class="ct">Registar dados do dia</p>
+    <p class="card-sub">Data, faturação e pedidos são obrigatórios. Os restantes campos são opcionais mas enriquecem os alertas automáticos.</p>
+    <div class="form-grid">
+      <div class="ff"><label>Data *</label><input type="date" id="f-date"></div>
+      <div class="ff"><label>Faturação (€) *</label><input type="number" id="f-fat" placeholder="ex: 1140" min="0" step="1"></div>
+      <div class="ff"><label>Nº de pedidos *</label><input type="number" id="f-ped" placeholder="ex: 72" min="0" step="1"></div>
+      <div class="ff"></div>
+
+      <div class="ff"><label>% Delivery próprio</label><input type="number" id="f-del" placeholder="ex: 45" min="0" max="100" step="1"></div>
+      <div class="ff"><label>% Agregadores</label><input type="number" id="f-agr" placeholder="ex: 20" min="0" max="100" step="1"></div>
+      <div class="ff"><label>% Carry Out</label><input type="number" id="f-tak" placeholder="ex: 20" min="0" max="100" step="1"></div>
+      <div class="ff"><label>% Dine In</label><input type="number" id="f-din" placeholder="ex: 10" min="0" max="100" step="1"></div>
+
+      <div class="ff"><label>Tempo entrega médio (min)</label><input type="number" id="f-ent" placeholder="ex: 28" min="0" step="1"></div>
+      <div class="ff"><label>Cancelamentos (nº)</label><input type="number" id="f-can" placeholder="ex: 3" min="0" step="1"></div>
+      <div class="ff"><label>% Pedidos online</label><input type="number" id="f-onl" placeholder="ex: 72" min="0" max="100" step="1"></div>
+      <div class="ff"><label>Food cost (%)</label><input type="number" id="f-fc" placeholder="ex: 28" min="0" max="100" step="1"></div>
+
+      <div class="ff"><label>Nº entregadores ativos</label><input type="number" id="f-drv" placeholder="ex: 5" min="0" step="1"></div>
+      <div class="ff"><label>Pico horário</label><input type="text" id="f-pico" placeholder="ex: 20h-23h" maxlength="20"></div>
+      <div class="ff"><label>Notas</label><input type="text" id="f-notas" placeholder="observações livres" maxlength="120"></div>
+      <div class="ff"></div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="btn-save" onclick="submitDay()">Guardar</button>
+      <button onclick="clearForm()">Limpar</button>
+      <span id="form-msg" style="font-size:12px;"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════ HISTÓRICO ════════════════════ -->
+<div id="tab-hist" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+    <p style="font-size:13px;font-weight:500;color:var(--text-primary);">Histórico completo — <span id="hist-count">0</span> dias registados</p>
+    <div style="display:flex;gap:8px;">
+      <button onclick="exportCSV()">Exportar CSV</button>
+      <button class="btn-danger" onclick="if(confirm('Apagar todos os dados? Esta ação não pode ser revertida.'))clearAll()">Apagar tudo</button>
+    </div>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Data</th><th>Dia</th><th>Faturação</th><th>Pedidos</th><th>Ticket</th>
+        <th>Entregadores</th><th>Ped/Entregador</th><th>Entrega</th><th>Cancel.</th>
+        <th>Delivery%</th><th>Agr%</th><th>CarryOut%</th><th>DineIn%</th><th>Online%</th><th>Food%</th><th>Pico</th><th>Notas</th><th></th>
+      </tr></thead>
+      <tbody id="hist-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════ SEMANAL ════════════════════ -->
+<div id="tab-sem" style="display:none;">
+
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Faturação (semana atual)</p><p class="kpi-val" id="s-fat">—</p><p class="kpi-sub" id="s-fat-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Pedidos (semana atual)</p><p class="kpi-val" id="s-ped">—</p><p class="kpi-sub" id="s-ped-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Ticket médio</p><p class="kpi-val" id="s-tick">—</p><p class="kpi-sub" id="s-tick-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Melhor dia</p><p class="kpi-val" id="s-best">—</p><p class="kpi-sub" id="s-best-s"></p></div>
+  </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Entrega média</p><p class="kpi-val" id="s-ent">—</p><p class="kpi-sub" id="s-ent-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Cancelamentos</p><p class="kpi-val" id="s-can">—</p><p class="kpi-sub" id="s-can-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Food cost</p><p class="kpi-val" id="s-fc">—</p><p class="kpi-sub" id="s-fc-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Fat./dia média</p><p class="kpi-val" id="s-fpd">—</p><p class="kpi-sub" id="s-fpd-s"></p></div>
+  </div>
+
+  <div class="g2 mb-14">
+    <div class="card">
+      <p class="ct">Faturação diária — semana atual vs semana anterior</p>
+      <p class="card-sub" id="s-chart-sub"></p>
+      <div style="position:relative;width:100%;height:220px;"><canvas id="cSem">Sem dados</canvas></div>
+    </div>
+    <div class="card">
+      <p class="ct">Comparação semana atual vs semana anterior</p>
+      <div id="s-comp"></div>
+    </div>
+  </div>
+
+  <div class="g2 mb-14">
+    <div class="card">
+      <p class="ct">Mix de canal — semana atual</p>
+      <div style="display:flex;gap:20px;align-items:center;justify-content:center;padding-top:6px;">
+        <div style="position:relative;height:150px;width:150px;flex-shrink:0;"><canvas id="cSemCanal">Sem dados</canvas></div>
+        <div class="canal-leg" id="s-cLeg"></div>
+      </div>
+    </div>
+    <div class="card">
+      <p class="ct">Distribuição por dia da semana</p>
+      <p class="card-sub">Faturação — semana atual</p>
+      <div id="s-dowBars"></div>
+    </div>
+  </div>
+
+  <div class="card mb-14">
+    <p class="ct">Histórico semanal</p>
+    <div class="tbl-wrap" style="border:none;margin:0;">
+      <table style="min-width:600px;">
+        <thead><tr>
+          <th>Semana</th><th>Período</th><th>Faturação</th><th>vs Ant.</th>
+          <th>Pedidos</th><th>vs Ant.</th><th>Ticket</th><th>Fat/dia</th><th>Entrega</th><th>Food%</th>
+        </tr></thead>
+        <tbody id="sem-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════ MENSAL ════════════════════ -->
+<div id="tab-men" style="display:none;">
+
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Faturação (mês atual)</p><p class="kpi-val" id="m-fat">—</p><p class="kpi-sub" id="m-fat-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Pedidos (mês atual)</p><p class="kpi-val" id="m-ped">—</p><p class="kpi-sub" id="m-ped-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Ticket médio</p><p class="kpi-val" id="m-tick">—</p><p class="kpi-sub" id="m-tick-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Dias registados</p><p class="kpi-val" id="m-dias">—</p><p class="kpi-sub" id="m-dias-s"></p></div>
+  </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Entrega média</p><p class="kpi-val" id="m-ent">—</p><p class="kpi-sub" id="m-ent-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Cancelamentos</p><p class="kpi-val" id="m-can">—</p><p class="kpi-sub" id="m-can-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Pedidos/dia</p><p class="kpi-val" id="m-ppd">—</p><p class="kpi-sub" id="m-ppd-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Food cost médio</p><p class="kpi-val" id="m-fc">—</p><p class="kpi-sub" id="m-fc-s"></p></div>
+  </div>
+
+  <div class="card mb-14" id="m-proj-card">
+    <p class="ct">Projeção de faturação — fim do mês</p>
+    <div id="m-proj"></div>
+  </div>
+
+  <div class="g2 mb-14">
+    <div class="card">
+      <p class="ct">Faturação mensal — últimos 12 meses</p>
+      <p class="card-sub" id="m-chart-sub"></p>
+      <div style="position:relative;width:100%;height:220px;"><canvas id="cMonth">Sem dados</canvas></div>
+    </div>
+    <div class="card">
+      <p class="ct">Comparação mês atual vs mês anterior</p>
+      <div id="m-comp"></div>
+    </div>
+  </div>
+
+  <div class="card mb-14">
+    <p class="ct">Resumo por mês</p>
+    <div class="tbl-wrap" style="border:none;margin:0;">
+      <table>
+        <thead><tr>
+          <th>Mês</th><th>Faturação</th><th>vs Ant.</th><th>Pedidos</th><th>vs Ant.</th>
+          <th>Ticket</th><th>Fat/dia</th><th>Ped/dia</th><th>Entrega</th><th>Food%</th>
+        </tr></thead>
+        <tbody id="men-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════ ANUAL ════════════════════ -->
+<div id="tab-ano" style="display:none;">
+
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Faturação (ano atual)</p><p class="kpi-val" id="a-fat">—</p><p class="kpi-sub" id="a-fat-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Pedidos (ano atual)</p><p class="kpi-val" id="a-ped">—</p><p class="kpi-sub" id="a-ped-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Ticket médio</p><p class="kpi-val" id="a-tick">—</p><p class="kpi-sub" id="a-tick-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Dias registados</p><p class="kpi-val" id="a-dias">—</p><p class="kpi-sub" id="a-dias-s"></p></div>
+  </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi"><p class="kpi-lbl">Melhor mês</p><p class="kpi-val" id="a-bm">—</p><p class="kpi-sub" id="a-bm-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Faturação média/mês</p><p class="kpi-val" id="a-fmes">—</p><p class="kpi-sub" id="a-fmes-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Fat./dia média</p><p class="kpi-val" id="a-fpd">—</p><p class="kpi-sub" id="a-fpd-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Food cost médio</p><p class="kpi-val" id="a-fc">—</p><p class="kpi-sub" id="a-fc-s"></p></div>
+  </div>
+
+  <div class="g2 mb-14">
+    <div class="card">
+      <p class="ct">Faturação anual — evolução mensal</p>
+      <p class="card-sub" id="a-chart-sub"></p>
+      <div style="position:relative;width:100%;height:220px;"><canvas id="cYear">Sem dados</canvas></div>
+    </div>
+    <div class="card">
+      <p class="ct">Comparação ano atual vs ano anterior</p>
+      <div id="a-comp"></div>
+    </div>
+  </div>
+
+  <div class="card mb-14">
+    <p class="ct">Resumo por ano</p>
+    <div class="tbl-wrap" style="border:none;margin:0;">
+      <table>
+        <thead><tr>
+          <th>Ano</th><th>Faturação</th><th>vs Ant.</th><th>Pedidos</th><th>vs Ant.</th>
+          <th>Ticket</th><th>Fat/dia</th><th>Meses c/ dados</th><th>Melhor mês</th>
+        </tr></thead>
+        <tbody id="ano-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</main>
+
+<script>
+const SK = 'dominos_v4';
+const DN = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+const DS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+let chartT = null, chartC = null, chartM = null, chartY = null, chartSem = null, chartSemC = null, allDays = [];
+
+/* ══════════════════════════════════════════
+   SUPABASE CONFIG — substitui pelos teus valores
+   ══════════════════════════════════════════ */
+const SUPABASE_URL  = 'SUPABASE_URL_AQUI';
+const SUPABASE_ANON = 'SUPABASE_ANON_KEY_AQUI';
+const TABLE         = 'dias';
+
+/* ── Supabase REST helpers ── */
+async function sbFetch(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey':        SUPABASE_ANON,
+      'Authorization': `Bearer ${SUPABASE_ANON}`,
+      'Content-Type':  'application/json',
+      'Prefer':        opts.prefer || '',
+      ...opts.headers
+    },
+    ...opts
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Supabase ${res.status}: ${err}`);
+  }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : null;
+}
+
+/* ── storage: load all rows ── */
+async function load() {
+  try {
+    const rows = await sbFetch(`${TABLE}?select=*&order=date.asc`);
+    return (rows || []).map(r => ({
+      date: r.date, fat: r.fat, ped: r.ped,
+      del: r.del, agr: r.agr, tak: r.tak, din: r.din,
+      ent: r.ent, can: r.can, onl: r.onl, fc: r.fc,
+      drv: r.drv, pico: r.pico, notas: r.notas
+    }));
+  } catch(e) {
+    console.error('Erro ao carregar dados:', e);
+    // fallback to localStorage cache
+    try { return JSON.parse(localStorage.getItem(SK) || '[]'); } catch(_) { return []; }
+  }
+}
+
+/* ── storage: upsert one record ── */
+async function saveDay(rec) {
+  await sbFetch(`${TABLE}`, {
+    method: 'POST',
+    prefer: 'resolution=merge-duplicates',
+    headers: { 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify(rec)
+  });
+  // update local cache
+  try { localStorage.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
+}
+
+/* ── storage: delete one record ── */
+async function deleteDay(date) {
+  await sbFetch(`${TABLE}?date=eq.${date}`, { method: 'DELETE' });
+  try { localStorage.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
+}
+
+/* ── storage: delete all ── */
+async function deleteAll() {
+  await sbFetch(`${TABLE}?date=neq.0000-00-00`, { method: 'DELETE' });
+  try { localStorage.removeItem(SK); } catch(_) {}
+}
+
+/* ── loading overlay ── */
+function showLoading(msg) {
+  document.getElementById('loading-overlay').style.display = 'flex';
+  document.getElementById('loading-msg').textContent = msg || 'A carregar...';
+}
+function hideLoading() {
+  document.getElementById('loading-overlay').style.display = 'none';
+}
+
+/* ── theme (localStorage only — preference is local) ── */
+
+/* ── helpers ── */
+function dow(ds)    { return new Date(ds + 'T12:00:00').getDay(); }
+function dowN(ds)   { return DN[dow(ds)]; }
+function dowS(ds)   { return DS[dow(ds)]; }
+function fmtD(ds)   { const [y,m,d] = ds.split('-'); return `${d}/${m}/${y.slice(2)}`; }
+function todayStr() { return new Date().toISOString().slice(0,10); }
+
+function isDark() {
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t) return t === 'dark';
+  return matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+function pctDiff(v, p, lbl) {
+  if (!p) return '';
+  const d = Math.round((v - p) / p * 100);
+  const c = d > 0 ? '#3B6D11' : d < 0 ? '#A32D2D' : '#5F5E5A';
+  return `<span style="color:${c};font-size:11px;">${d>0?'+':''}${d}% ${lbl||'vs sem. ant.'}</span>`;
+}
+function colorSpan(val, ok, warn, okTxt, warnTxt, badTxt) {
+  const c = val <= ok ? '#3B6D11' : val <= warn ? '#BA7517' : '#A32D2D';
+  const t = val <= ok ? okTxt : val <= warn ? warnTxt : badTxt;
+  return `<span style="color:${c};font-size:11px;">${t}</span>`;
+}
+
+/* ── sample data ── */
+function generateSample() {
+  const base = new Date('2026-04-14T12:00:00');
+  const byD  = {0:780, 1:460, 2:400, 3:510, 4:620, 5:880, 6:1100};
+  // Generate ~6 months of daily data (180 days back)
+  return Array.from({length:180}, (_, i) => {
+    const d  = new Date(base); d.setDate(d.getDate() - i);
+    const ds = d.toISOString().slice(0,10);
+    const dw = d.getDay();
+    // slight seasonal growth trend: older days slightly lower
+    const trend = 1 - (i / 180) * 0.15;
+    const fat = Math.round(byD[dw] * trend * (0.88 + Math.random() * 0.24));
+    const ped = Math.round(fat / (13.0 + Math.random() * 3.5));
+    const drv = dw===5||dw===6 ? 6 : dw===0 ? 5 : 3;
+    return {
+      date: ds, fat, ped,
+      del:  45 + Math.round(Math.random() * 10),
+      agr:  15 + Math.round(Math.random() * 10),
+      tak:  15 + Math.round(Math.random() * 8),
+      din:  5  + Math.round(Math.random() * 6),
+      ent:  23 + Math.round(Math.random() * 14),
+      can:  Math.round(Math.random() * 4),
+      onl:  62 + Math.round(Math.random() * 18),
+      fc:   25 + Math.round(Math.random() * 8),
+      drv,
+      pico: dw===6||dw===5 ? '20h-23h' : dw===0 ? '19h-21h' : '20h-21h',
+      notas: ''
+    };
+  });
+}
+
+/* ── tab nav ── */
+function showTab(id) {
+  ['dash','reg','hist','sem','men','ano'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === id ? '' : 'none';
+    document.getElementById('t-' + t).classList.toggle('active', t === id);
+  });
+  if (id === 'dash') renderDash();
+  if (id === 'hist') renderHist();
+  if (id === 'sem')  renderSemanal();
+  if (id === 'men')  renderMensal();
+  if (id === 'ano')  renderAnual();
+}
+
+/* ── DASHBOARD ── */
+function renderDash() {
+  if (!allDays.length) {
+    document.getElementById('insights').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Sem dados. Clique em "+ Registar dia" para começar.</p>';
+    return;
+  }
+  const sorted = [...allDays].sort((a,b) => b.date.localeCompare(a.date));
+  const L7 = sorted.slice(0, 7);
+  const P7 = sorted.slice(7, 14);
+
+  const fat7  = L7.reduce((s,r) => s + r.fat, 0);
+  const ped7  = L7.reduce((s,r) => s + r.ped, 0);
+  const fatP  = P7.length ? P7.reduce((s,r) => s + r.fat, 0) : null;
+  const pedP  = P7.length ? P7.reduce((s,r) => s + r.ped, 0) : null;
+
+  document.getElementById('k-fat').textContent  = `€${fat7.toLocaleString('pt-PT')}`;
+  document.getElementById('k-fat-s').innerHTML  = pctDiff(fat7, fatP);
+  document.getElementById('k-ped').textContent  = ped7;
+  document.getElementById('k-ped-s').innerHTML  = pctDiff(ped7, pedP);
+
+  const tick  = ped7 > 0 ? (fat7 / ped7).toFixed(1) : '—';
+  const tickP = pedP > 0 && fatP ? (fatP / pedP) : null;
+  document.getElementById('k-tick').textContent = tick !== '—' ? `€${tick}` : '—';
+  document.getElementById('k-tick-s').innerHTML = tick !== '—' && tickP ? pctDiff(parseFloat(tick), tickP) : '';
+
+  const best = [...L7].sort((a,b) => b.fat - a.fat)[0];
+  document.getElementById('k-best').textContent  = dowS(best.date);
+  document.getElementById('k-best-s').innerHTML  = `<span style="color:var(--text-secondary);font-size:11px;">€${best.fat.toLocaleString('pt-PT')} · ${best.ped} ped.</span>`;
+
+  const wE    = L7.filter(r => r.ent > 0);
+  const avgE  = wE.length ? Math.round(wE.reduce((s,r) => s + r.ent, 0) / wE.length) : null;
+  document.getElementById('k-ent').textContent  = avgE ? `${avgE} min` : '—';
+  if (avgE) document.getElementById('k-ent-s').innerHTML = colorSpan(avgE, 30, 35, 'dentro do alvo', 'atenção', 'crítico — revisar');
+
+  const totC  = L7.reduce((s,r) => s + (r.can || 0), 0);
+  const cPct  = ped7 > 0 ? parseFloat(((totC / ped7) * 100).toFixed(1)) : 0;
+  document.getElementById('k-can').textContent  = `${totC}`;
+  const cc = cPct > 5 ? '#A32D2D' : cPct > 3 ? '#BA7517' : '#3B6D11';
+  document.getElementById('k-can-s').innerHTML  = `<span style="color:${cc};font-size:11px;">${cPct}% dos pedidos</span>`;
+
+  const wF    = L7.filter(r => r.fc > 0);
+  const avgF  = wF.length ? Math.round(wF.reduce((s,r) => s + r.fc, 0) / wF.length) : null;
+  document.getElementById('k-fc').textContent  = avgF ? `${avgF}%` : '—';
+  if (avgF) document.getElementById('k-fc-s').innerHTML = colorSpan(avgF, 29, 32, 'dentro do alvo (<30%)', 'atenção', 'acima do alvo');
+
+  const wAgr   = L7.filter(r => r.agr > 0);
+  const avgAgr = wAgr.length ? Math.round(wAgr.reduce((s,r) => s + r.agr, 0) / wAgr.length) : null;
+  document.getElementById('k-agr').textContent  = avgAgr !== null ? `${avgAgr}%` : '—';
+  document.getElementById('k-agr-s').innerHTML  = avgAgr !== null ? `<span style="color:${avgAgr>30?'#A32D2D':avgAgr>20?'#BA7517':'#3B6D11'};font-size:11px;">${avgAgr>30?'comissões elevadas':avgAgr>20?'monitorizar':'dentro do normal'}</span>` : '';
+
+  renderTrend(sorted.slice(0, 14).reverse());
+  renderCanal(L7);
+  renderDow(sorted);
+  renderAddKPIs(L7);
+  renderInsights(L7, P7, avgE, totC, ped7, avgF);
+
+  document.getElementById('hdr-sub').textContent =
+    `${sorted.length} dia${sorted.length > 1 ? 's' : ''} registado${sorted.length > 1 ? 's' : ''} · último: ${fmtD(sorted[0].date)}`;
+}
+
+function renderTrend(days) {
+  const dark = isDark();
+  const tc = dark ? '#B4B2A9' : '#888780';
+  const gc = dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.05)';
+  if (chartT) chartT.destroy();
+  chartT = new Chart(document.getElementById('cTrend'), {
+    data: {
+      labels: days.map(d => fmtD(d.date)),
+      datasets: [
+        { type:'bar',  data: days.map(d => d.fat), backgroundColor:'#378ADD', borderRadius:3, yAxisID:'y',  order:2 },
+        { type:'line', data: days.map(d => d.ped), borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,.1)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#1D9E75', yAxisID:'y1', order:1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x:  { ticks: { color:tc, font:{size:10}, maxRotation:45, autoSkip:true, maxTicksLimit:10 }, grid: { color:gc } },
+        y:  { position:'left',  ticks: { color:tc, font:{size:10}, callback: v => `€${v}` }, grid: { color:gc } },
+        y1: { position:'right', ticks: { color:tc, font:{size:10} }, grid: { display:false } }
+      }
+    }
+  });
+}
+
+function renderCanal(days) {
+  const wD  = days.filter(r => r.del > 0), wA = days.filter(r => r.agr > 0);
+  const wT  = days.filter(r => r.tak > 0), wN = days.filter(r => r.din > 0);
+  const aD  = wD.length ? Math.round(wD.reduce((s,r) => s+r.del, 0)/wD.length) : 45;
+  const aA  = wA.length ? Math.round(wA.reduce((s,r) => s+r.agr, 0)/wA.length) : 20;
+  const aT  = wT.length ? Math.round(wT.reduce((s,r) => s+r.tak, 0)/wT.length) : 25;
+  const aN  = wN.length ? Math.round(wN.reduce((s,r) => s+r.din, 0)/wN.length) : 10;
+  const vals = [aD, aA, aT, aN];
+  const lbls = ['Delivery próprio','Agregadores','Carry Out','Dine In'];
+  const clrs = ['#185FA5','#378ADD','#1D9E75','#BA7517'];
+  if (chartC) chartC.destroy();
+  chartC = new Chart(document.getElementById('cCanal'), {
+    type: 'doughnut',
+    data: { labels:lbls, datasets:[{ data:vals, backgroundColor:clrs, borderWidth:0, hoverOffset:4 }] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}%`}} } }
+  });
+  document.getElementById('cLeg').innerHTML = lbls.map((l,i) => `
+    <div class="cl-row">
+      <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:12px;">
+        <span class="cl-dot" style="background:${clrs[i]};"></span>${l}
+      </span>
+      <span style="font-weight:500;font-size:12px;color:var(--text-primary);">${vals[i]}%</span>
+    </div>`).join('');
+}
+
+function renderDow(sorted) {
+  const agg = Array(7).fill(null).map(() => ({f:0, n:0}));
+  sorted.forEach(r => { const d = dow(r.date); agg[d].f += r.fat; agg[d].n++; });
+  const avgs = agg.map(a => a.n > 0 ? Math.round(a.f / a.n) : 0);
+  const max  = Math.max(...avgs) || 1;
+  const bc   = ['#185FA5','#B5D4F4','#B5D4F4','#B5D4F4','#85B7EB','#378ADD','#185FA5'];
+  const ord  = [1,2,3,4,5,6,0];
+  document.getElementById('dowBars').innerHTML = ord.map(i => `
+    <div class="mb-row">
+      <span style="font-size:11px;color:var(--text-secondary);">${DS[i]}</span>
+      <div class="mb-bg"><div class="mb-f" style="width:${Math.round(avgs[i]/max*100)}%;background:${bc[i]};"></div></div>
+      <span style="font-size:11px;font-weight:500;color:var(--text-primary);text-align:right;">${avgs[i]>0?`€${avgs[i]}`:'—'}</span>
+    </div>`).join('');
+}
+
+function renderAddKPIs(L7) {
+  const wA = L7.filter(r => r.agr > 0);
+  const avgA = wA.length ? Math.round(wA.reduce((s,r) => s+r.agr, 0)/wA.length) : null;
+  const wO = L7.filter(r => r.onl > 0);
+  const avgO = wO.length ? Math.round(wO.reduce((s,r) => s+r.onl, 0)/wO.length) : null;
+  const wDrv = L7.filter(r => r.drv > 0);
+  const avgPpe = wDrv.length ? parseFloat((wDrv.reduce((s,r) => s + r.ped/r.drv, 0)/wDrv.length).toFixed(1)) : null;
+  const wkE = L7.filter(r => { const d=dow(r.date); return d===5||d===6||d===0; });
+  const wkD = L7.filter(r => { const d=dow(r.date); return d>=1&&d<=4; });
+  const weFat = wkE.reduce((s,r) => s+r.fat, 0);
+  const wdFat = wkD.reduce((s,r) => s+r.fat, 0);
+  const tot = weFat + wdFat;
+  const wePct = tot > 0 ? Math.round(weFat/tot*100) : null;
+
+  document.getElementById('addKPIs').innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div class="kpi">
+        <p class="kpi-lbl">% pedidos online</p>
+        <p class="kpi-val">${avgO !== null ? `${avgO}%` : '—'}</p>
+        <p class="kpi-sub" style="color:var(--text-secondary);">vs telefone/balcão</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-lbl">% agregadores</p>
+        <p class="kpi-val">${avgA !== null ? `${avgA}%` : '—'}</p>
+        <p class="kpi-sub" style="color:${avgA!==null&&avgA>30?'#A32D2D':'var(--text-secondary)'};">${avgA!==null?(avgA>30?'comissões elevadas':'dentro do normal'):'—'}</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-lbl">Ped. por entregador</p>
+        <p class="kpi-val">${avgPpe !== null ? avgPpe : '—'}</p>
+        <p class="kpi-sub" style="color:var(--text-secondary);">média diária</p>
+      </div>
+      <div class="kpi">
+        <p class="kpi-lbl">Peso fim de semana</p>
+        <p class="kpi-val">${wePct !== null ? `${wePct}%` : '—'}</p>
+        <p class="kpi-sub" style="color:${wePct<50?'#A32D2D':'#3B6D11'};">${wePct!==null?(wePct<50?'abaixo do padrão':'normal — ~60%'):'Sex+Sáb+Dom'}</p>
+      </div>
+    </div>`;
+}
+
+function renderInsights(L7, P7, avgE, totC, ped7, avgF) {
+  const ins = [];
+  if (avgE !== null) {
+    if (avgE > 35)      ins.push({t:'w', h:'Tempo de entrega crítico',       s:`Média de ${avgE} min acima do limite de 35 min. Rever rotas, staffing e zonas de cobertura.`});
+    else if (avgE > 30) ins.push({t:'w', h:'Tempo de entrega no limite',      s:`Média de ${avgE} min. Alvo operacional é <30 min. Monitorizar nos picos de sexta e sábado.`});
+    else                ins.push({t:'g', h:'Entrega dentro do alvo',          s:`Média de ${avgE} min. Bom desempenho operacional.`});
+  }
+  if (ped7 > 0) {
+    const cPct = parseFloat(((totC / ped7) * 100).toFixed(1));
+    if (cPct > 5)       ins.push({t:'w', h:'Taxa de cancelamento elevada',    s:`${cPct}% dos pedidos cancelados (${totC} pedidos). Investigar causas: tempo de espera, indisponibilidade de produto ou erros.`});
+    else if (cPct > 3)  ins.push({t:'w', h:'Cancelamentos a monitorizar',     s:`${cPct}% de cancelamentos. Ainda aceitável, mas merece atenção continuada.`});
+  }
+  if (avgF !== null && avgF > 32)
+    ins.push({t:'w', h:'Food cost acima do alvo', s:`${avgF}% de custo alimentar. Alvo é 25–30%. Rever desperdício, porções e condições com fornecedores.`});
+  if (P7.length) {
+    const fat7 = L7.reduce((s,r) => s+r.fat, 0), fatP = P7.reduce((s,r) => s+r.fat, 0);
+    const pct  = Math.round((fat7 - fatP) / fatP * 100);
+    if (pct > 10)       ins.push({t:'g', h:'Tendência positiva',              s:`Faturação +${pct}% face à semana anterior. Identificar o que está a funcionar e manter.`});
+    else if (pct < -5)  ins.push({t:'w', h:'Queda de faturação',              s:`Faturação ${pct}% face à semana anterior. Considerar ativação de promoções e marketing local.`});
+  }
+  const best  = [...L7].sort((a,b) => b.fat - a.fat)[0];
+  const worst = [...L7].sort((a,b) => a.fat - b.fat)[0];
+  if (best && worst && best.fat > 0) {
+    const ratio = (best.fat / worst.fat).toFixed(1);
+    if (ratio > 3) ins.push({t:'n', h:'Alta variabilidade semanal', s:`${dowN(best.date)} fatura ${ratio}x mais que ${dowN(worst.date)}. Oportunidade: promoções estratégicas nos dias fracos.`});
+  }
+  const wO = L7.filter(r => r.onl > 0);
+  if (wO.length) {
+    const avgO = Math.round(wO.reduce((s,r) => s+r.onl, 0) / wO.length);
+    if (avgO < 50)      ins.push({t:'w', h:'Baixa digitalização dos pedidos', s:`Apenas ${avgO}% dos pedidos online. Aumentar presença na app e plataformas de entrega.`});
+    else if (avgO > 75) ins.push({t:'g', h:'Forte adoção digital',            s:`${avgO}% dos pedidos via canal online. Perfil favorável a campanhas segmentadas por app.`});
+  }
+  const wA = L7.filter(r => r.agr > 0);
+  if (wA.length) {
+    const avgA = Math.round(wA.reduce((s,r) => s+r.agr, 0) / wA.length);
+    const wDel = L7.filter(r => r.del > 0);
+    const avgDel = wDel.length ? Math.round(wDel.reduce((s,r) => s+r.del, 0) / wDel.length) : 0;
+    if (avgA > 30)       ins.push({t:'w', h:'Peso elevado de agregadores',    s:`${avgA}% via agregadores vs ${avgDel}% delivery próprio. Comissões elevadas a impactar margem. Rever estratégia de canal.`});
+    else if (avgA > 20)  ins.push({t:'w', h:'Agregadores a monitorizar',      s:`${avgA}% via agregadores. Equilibrar captação de novos clientes com custo de comissão.`});
+    else                 ins.push({t:'g', h:'Boa proporção delivery próprio', s:`${avgDel}% delivery próprio vs ${avgA}% agregadores. Canal próprio com maior margem dominante.`});
+  }
+  if (!ins.length) ins.push({t:'n', h:'Sem alertas ativos', s:'Todos os indicadores dentro dos parâmetros normais.'});
+  document.getElementById('insights').innerHTML = ins.map(i => `
+    <div class="ins ${i.t==='w'?'ins-w':i.t==='g'?'ins-g':'ins-n'}">
+      <p class="it">${i.h}</p><p class="is">${i.s}</p>
+    </div>`).join('');
+}
+
+/* ── HISTORY ── */
+function renderHist() {
+  const sorted = [...allDays].sort((a,b) => b.date.localeCompare(a.date));
+  document.getElementById('hist-count').textContent = sorted.length;
+  document.getElementById('hist-body').innerHTML = sorted.length
+    ? sorted.map(r => {
+        const tick = r.ped > 0 ? (r.fat / r.ped).toFixed(1) : '—';
+        const ppe  = r.drv && r.ped ? Math.round(r.ped / r.drv) : '—';
+        const entB = r.ent ? `<span class="b ${r.ent>35?'b-dn':r.ent>30?'b-w':'b-ok'}">${r.ent}m</span>` : '—';
+        const canB = r.can > 3 ? `<span class="b b-w">${r.can}</span>` : (r.can || 0);
+        return `<tr>
+          <td style="font-weight:500;">${fmtD(r.date)}</td>
+          <td>${dowN(r.date)}</td>
+          <td>€${r.fat.toLocaleString('pt-PT')}</td>
+          <td>${r.ped}</td>
+          <td>€${tick}</td>
+          <td>${r.drv || '—'}</td>
+          <td>${ppe}</td>
+          <td>${entB}</td>
+          <td>${canB}</td>
+          <td>${r.del   ? `${r.del}%`   : '—'}</td>
+          <td>${r.agr   ? `${r.agr}%`   : '—'}</td>
+          <td>${r.tak   ? `${r.tak}%`   : '—'}</td>
+          <td>${r.din   ? `${r.din}%`   : '—'}</td>
+          <td>${r.onl   ? `${r.onl}%`   : '—'}</td>
+          <td>${r.fc    ? `${r.fc}%`    : '—'}</td>
+          <td style="color:var(--text-secondary);">${r.pico  || '—'}</td>
+          <td style="color:var(--text-secondary);font-size:11px;">${r.notas || ''}</td>
+          <td><button class="btn-sm btn-danger" onclick="delDay('${r.date}')">del</button></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="18" style="text-align:center;color:var(--text-secondary);padding:28px;">Sem dados registados.</td></tr>';
+}
+
+/* ── FORM ── */
+async function submitDay() {
+  const date = document.getElementById('f-date').value;
+  const fat  = parseFloat(document.getElementById('f-fat').value);
+  const ped  = parseInt(document.getElementById('f-ped').value);
+  if (!date || isNaN(fat) || isNaN(ped) || fat <= 0 || ped <= 0) {
+    document.getElementById('form-msg').innerHTML = '<span style="color:#A32D2D;">Preencha data, faturação e nº de pedidos.</span>';
+    return;
+  }
+  const fv = id => parseFloat(document.getElementById(id).value) || null;
+  const fi = id => parseInt(document.getElementById(id).value) || 0;
+  const fo = id => { const v = parseInt(document.getElementById(id).value); return isNaN(v) || document.getElementById(id).value==='' ? null : v; };
+  const ft = id => document.getElementById(id).value || '';
+  const rec = {
+    date, fat, ped,
+    del:   fo('f-del'),  agr:   fo('f-agr'),  tak:   fo('f-tak'),  din:   fo('f-din'),
+    ent:   fv('f-ent'),
+    can:   fi('f-can'),  onl:   fo('f-onl'),
+    fc:    fo('f-fc'),   drv:   parseInt(document.getElementById('f-drv').value) || null,
+    pico:  ft('f-pico'), notas: ft('f-notas')
+  };
+  const msg = document.getElementById('form-msg');
+  msg.innerHTML = '<span style="color:#BA7517;">A guardar...</span>';
+  try {
+    await saveDay(rec);
+    const idx = allDays.findIndex(d => d.date === date);
+    if (idx >= 0) allDays[idx] = rec; else allDays.push(rec);
+    msg.innerHTML = `<span style="color:#3B6D11;">✓ Dia ${fmtD(date)} guardado.</span>`;
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+  } catch(e) {
+    msg.innerHTML = `<span style="color:#A32D2D;">Erro ao guardar: ${e.message}</span>`;
+  }
+}
+
+function clearForm() {
+  ['f-del','f-agr','f-tak','f-din','f-ent','f-can','f-onl','f-fc','f-drv','f-fat','f-ped','f-pico','f-notas'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-date').value  = todayStr();
+  document.getElementById('form-msg').textContent = '';
+}
+
+
+async function delDay(date) {
+  try {
+    await deleteDay(date);
+    allDays = allDays.filter(d => d.date !== date);
+    renderHist(); renderDash();
+  } catch(e) { alert('Erro ao apagar: ' + e.message); }
+}
+async function clearAll() {
+  try {
+    await deleteAll();
+    allDays = []; renderHist(); renderDash();
+  } catch(e) { alert('Erro ao apagar: ' + e.message); }
+}
+
+/* ── helpers: aggregate by month/year ── */
+function monthKey(ds)  { return ds.slice(0,7); }          // "2026-04"
+function yearKey(ds)   { return ds.slice(0,4); }           // "2026"
+function fmtMonth(mk)  { const [y,m]=mk.split('-'); const MN=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']; return `${MN[+m-1]} ${y.slice(2)}`; }
+function fmtMonthFull(mk){ const [y,m]=mk.split('-'); const MN=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']; return `${MN[+m-1]} ${y}`; }
+
+function aggregateByMonth(days) {
+  const map = {};
+  days.forEach(r => {
+    const k = monthKey(r.date);
+    if (!map[k]) map[k] = {fat:0,ped:0,can:0,entS:0,entN:0,fcS:0,fcN:0,n:0};
+    const m = map[k];
+    m.fat += r.fat; m.ped += r.ped; m.can += (r.can||0); m.n++;
+    if (r.ent>0) { m.entS += r.ent; m.entN++; }
+    if (r.fc>0)  { m.fcS  += r.fc;  m.fcN++;  }
+  });
+  return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>({
+    key:k, fat:v.fat, ped:v.ped, can:v.can, n:v.n,
+    avgEnt: v.entN ? Math.round(v.entS/v.entN) : null,
+    avgFc:  v.fcN  ? Math.round(v.fcS/v.fcN)   : null,
+  }));
+}
+
+function aggregateByYear(days) {
+  const map = {};
+  days.forEach(r => {
+    const k = yearKey(r.date);
+    if (!map[k]) map[k] = {fat:0,ped:0,n:0,months:new Set(),fcS:0,fcN:0};
+    const m = map[k];
+    m.fat += r.fat; m.ped += r.ped; m.n++;
+    m.months.add(monthKey(r.date));
+    if (r.fc>0)  { m.fcS  += r.fc;  m.fcN++;  }
+  });
+  return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>({
+    key:k, fat:v.fat, ped:v.ped, n:v.n, months:[...v.months].sort(),
+    numMonths: v.months.size,
+    avgFc:  v.fcN  ? Math.round(v.fcS/v.fcN)   : null,
+  }));
+}
+
+/* ── week helpers ── */
+// Returns ISO week key: "2026-W15"
+function weekKey(ds) {
+  const d = new Date(ds + 'T12:00:00');
+  const day = d.getDay() === 0 ? 7 : d.getDay(); // Mon=1..Sun=7
+  const thu = new Date(d); thu.setDate(d.getDate() - day + 4);
+  const y = thu.getFullYear();
+  const jan4 = new Date(y, 0, 4);
+  const j4day = jan4.getDay() === 0 ? 7 : jan4.getDay();
+  const w = Math.ceil(((thu - jan4) / 86400000 + j4day) / 7);
+  return `${y}-W${String(w).padStart(2,'0')}`;
+}
+function weekStart(wk) {
+  // Returns Monday date string for a "YYYY-WNN" key
+  const [y, wn] = wk.split('-W');
+  const jan4 = new Date(+y, 0, 4);
+  const j4day = jan4.getDay() === 0 ? 7 : jan4.getDay();
+  const mon = new Date(jan4); mon.setDate(jan4.getDate() - j4day + 1 + (+wn - 1) * 7);
+  return mon.toISOString().slice(0,10);
+}
+function weekEnd(wk) {
+  const ms = weekStart(wk); const d = new Date(ms + 'T12:00:00'); d.setDate(d.getDate() + 6);
+  return d.toISOString().slice(0,10);
+}
+function fmtWeekRange(wk) { return `${fmtD(weekStart(wk))} – ${fmtD(weekEnd(wk))}`; }
+
+function aggregateByWeek(days) {
+  const map = {};
+  days.forEach(r => {
+    const k = weekKey(r.date);
+    if (!map[k]) map[k] = {fat:0,ped:0,can:0,entS:0,entN:0,fcS:0,fcN:0,
+      delS:0,delN:0,agrS:0,agrN:0,takS:0,takN:0,dinS:0,dinN:0,n:0};
+    const m = map[k];
+    m.fat+=r.fat; m.ped+=r.ped; m.can+=(r.can||0); m.n++;
+    if (r.ent>0){m.entS+=r.ent;m.entN++;}
+    if (r.fc>0) {m.fcS +=r.fc; m.fcN++;}
+    if (r.del>0){m.delS+=r.del;m.delN++;}
+    if (r.agr>0){m.agrS+=r.agr;m.agrN++;}
+    if (r.tak>0){m.takS+=r.tak;m.takN++;}
+    if (r.din>0){m.dinS+=r.din;m.dinN++;}
+  });
+  return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>({
+    key:k, fat:v.fat, ped:v.ped, can:v.can, n:v.n,
+    avgEnt: v.entN ? Math.round(v.entS/v.entN) : null,
+    avgFc:  v.fcN  ? Math.round(v.fcS/v.fcN)  : null,
+    avgDel: v.delN ? Math.round(v.delS/v.delN) : null,
+    avgAgr: v.agrN ? Math.round(v.agrS/v.agrN) : null,
+    avgTak: v.takN ? Math.round(v.takS/v.takN) : null,
+    avgDin: v.dinN ? Math.round(v.dinS/v.dinN) : null,
+  }));
+}
+
+/* ── SEMANAL ── */
+function renderSemanal() {
+  const weeks = aggregateByWeek(allDays);
+  if (!weeks.length) return;
+  const curWk  = weekKey(todayStr());
+  const curW   = weeks.find(w=>w.key===curWk) || weeks[weeks.length-1];
+  const curIdx = weeks.indexOf(curW);
+  const prevW  = curIdx > 0 ? weeks[curIdx-1] : null;
+  const dark=isDark(), tc=dark?'#B4B2A9':'#888780', gc=dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)';
+
+  // KPIs
+  document.getElementById('s-fat').textContent  = `€${curW.fat.toLocaleString('pt-PT')}`;
+  document.getElementById('s-fat-s').innerHTML  = prevW ? pctDiff(curW.fat, prevW.fat, 'vs sem. ant.') : '';
+  document.getElementById('s-ped').textContent  = curW.ped;
+  document.getElementById('s-ped-s').innerHTML  = prevW ? pctDiff(curW.ped, prevW.ped, 'vs sem. ant.') : '';
+  const tick = curW.ped>0?(curW.fat/curW.ped).toFixed(1):'—';
+  document.getElementById('s-tick').textContent = tick!=='—'?`€${tick}`:'—';
+  document.getElementById('s-tick-s').innerHTML = prevW&&prevW.ped>0 ? pctDiff(parseFloat(tick), prevW.fat/prevW.ped, 'vs sem. ant.') : '';
+  // best day this week
+  const curWDays = allDays.filter(r=>weekKey(r.date)===curW.key).sort((a,b)=>b.fat-a.fat);
+  const bestDay  = curWDays[0];
+  document.getElementById('s-best').textContent = bestDay ? dowS(bestDay.date) : '—';
+  document.getElementById('s-best-s').innerHTML = bestDay ? `<span style="font-size:11px;color:var(--text-secondary);">€${bestDay.fat.toLocaleString('pt-PT')}</span>` : '';
+  document.getElementById('s-ent').textContent  = curW.avgEnt ? `${curW.avgEnt} min` : '—';
+  if (curW.avgEnt) document.getElementById('s-ent-s').innerHTML = colorSpan(curW.avgEnt,30,35,'dentro do alvo','atenção','crítico');
+  document.getElementById('s-can').textContent  = curW.can;
+  const cPct = curW.ped>0?((curW.can/curW.ped)*100).toFixed(1):0;
+  const cc   = cPct>5?'#A32D2D':cPct>3?'#BA7517':'#3B6D11';
+  document.getElementById('s-can-s').innerHTML  = `<span style="color:${cc};font-size:11px;">${cPct}% dos pedidos</span>`;
+  const wSF=allDays.filter(r=>weekKey(r.date)===curW.key&&r.fc>0); const avgSF=wSF.length?Math.round(wSF.reduce((s,r)=>s+r.fc,0)/wSF.length):null;
+  document.getElementById('s-fc').textContent  = avgSF ? `${avgSF}%` : '—';
+  if (avgSF) document.getElementById('s-fc-s').innerHTML = colorSpan(avgSF,29,32,'dentro do alvo','atenção','acima do alvo');
+  const fpd = curW.n>0?Math.round(curW.fat/curW.n):null;
+  document.getElementById('s-fpd').textContent  = fpd ? `€${fpd.toLocaleString('pt-PT')}` : '—';
+  document.getElementById('s-fpd-s').innerHTML  = prevW&&prevW.n>0 ? pctDiff(fpd, Math.round(prevW.fat/prevW.n), 'vs sem. ant.') : '';
+
+  // chart subtitle
+  document.getElementById('s-chart-sub').textContent = `${fmtWeekRange(curW.key)}`;
+
+  // bar chart: current week days vs prev week same days
+  const DAYS_ORD = [1,2,3,4,5,6,0]; // Mon→Sun
+  const curWMap  = {}; curWDays.forEach(r=>{ curWMap[dow(r.date)] = r.fat; });
+  const prevWMap = {};
+  if (prevW) allDays.filter(r=>weekKey(r.date)===prevW.key).forEach(r=>{ prevWMap[dow(r.date)] = r.fat; });
+  const labels  = DAYS_ORD.map(i=>DS[i]);
+  const curData = DAYS_ORD.map(i=>curWMap[i]||null);
+  const prvData = DAYS_ORD.map(i=>prevWMap[i]||null);
+  if (chartSem) chartSem.destroy();
+  const ds2 = [{ type:'bar', label:'Semana atual', data:curData, backgroundColor:'#378ADD', borderRadius:3, order:1 }];
+  if (prevW) ds2.push({ type:'line', label:'Semana anterior', data:prvData, borderColor:'#BA7517', backgroundColor:'rgba(186,117,23,.08)', tension:.3, pointRadius:3, pointBackgroundColor:'#BA7517', fill:false, order:0, borderDash:[4,3] });
+  chartSem = new Chart(document.getElementById('cSem'), {
+    data:{ labels, datasets:ds2 },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:!!prevW, position:'top', labels:{color:tc,font:{size:11},boxWidth:12} },
+        tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: €${(ctx.raw||0).toLocaleString('pt-PT')}`}} },
+      scales:{ x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}}, y:{ticks:{color:tc,font:{size:10},callback:v=>`€${v}`},grid:{color:gc}} }
+    }
+  });
+
+  // comparison card
+  if (prevW) {
+    const rows=[
+      ['Faturação',   `€${curW.fat.toLocaleString('pt-PT')}`, `€${prevW.fat.toLocaleString('pt-PT')}`, curW.fat, prevW.fat],
+      ['Pedidos',      curW.ped, prevW.ped, curW.ped, prevW.ped],
+      ['Ticket médio',`€${(curW.fat/curW.ped).toFixed(1)}`,`€${(prevW.fat/prevW.ped).toFixed(1)}`, curW.fat/curW.ped, prevW.fat/prevW.ped],
+      ['Fat./dia',    `€${Math.round(curW.fat/curW.n).toLocaleString('pt-PT')}`,`€${Math.round(prevW.fat/prevW.n).toLocaleString('pt-PT')}`, curW.fat/curW.n, prevW.fat/prevW.n],
+      ['Cancelamentos', curW.can, prevW.can, prevW.can, curW.can], // inverted: fewer is better
+    ];
+    if (curW.avgEnt&&prevW.avgEnt) rows.push(['Entrega média',`${curW.avgEnt}m`,`${prevW.avgEnt}m`, prevW.avgEnt, curW.avgEnt]);
+    document.getElementById('s-comp').innerHTML = `
+      <p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">${fmtWeekRange(curW.key)} vs ${fmtWeekRange(prevW.key)}</p>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        <thead><tr>
+          <th style="text-align:left;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Indicador</th>
+          <th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Atual</th>
+          <th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Anterior</th>
+          <th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Δ</th>
+        </tr></thead>
+        <tbody>${rows.map(([lbl,cv,pv,cn,pn])=>{
+          const d=Math.round((cn-pn)/Math.max(pn,0.001)*100); const c=d>0?'#3B6D11':d<0?'#A32D2D':'#5F5E5A';
+          return `<tr style="border-top:0.5px solid var(--border-light);">
+            <td style="padding:5px 6px;">${lbl}</td>
+            <td style="padding:5px 6px;text-align:right;font-weight:500;">${cv}</td>
+            <td style="padding:5px 6px;text-align:right;color:var(--text-secondary);">${pv}</td>
+            <td style="padding:5px 6px;text-align:right;"><span style="color:${c};font-weight:500;">${d>0?'+':''}${d}%</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  } else {
+    document.getElementById('s-comp').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);padding:12px 0;">Sem semana anterior para comparar.</p>';
+  }
+
+  // canal donut (current week)
+  const cVals = [curW.avgDel||45, curW.avgAgr||20, curW.avgTak||25, curW.avgDin||10];
+  const cLbls = ['Delivery próprio','Agregadores','Carry Out','Dine In'];
+  const cClrs = ['#185FA5','#378ADD','#1D9E75','#BA7517'];
+  if (chartSemC) chartSemC.destroy();
+  chartSemC = new Chart(document.getElementById('cSemCanal'), {
+    type:'doughnut',
+    data:{ labels:cLbls, datasets:[{ data:cVals, backgroundColor:cClrs, borderWidth:0, hoverOffset:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}%`}} } }
+  });
+  document.getElementById('s-cLeg').innerHTML = cLbls.map((l,i)=>`
+    <div class="cl-row">
+      <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:12px;">
+        <span class="cl-dot" style="background:${cClrs[i]};"></span>${l}
+      </span>
+      <span style="font-weight:500;font-size:12px;color:var(--text-primary);">${cVals[i]}%</span>
+    </div>`).join('');
+
+  // mini bars per day
+  const maxFat = Math.max(...curData.filter(Boolean), 1);
+  const bc = ['#B5D4F4','#B5D4F4','#B5D4F4','#B5D4F4','#85B7EB','#378ADD','#185FA5'];
+  document.getElementById('s-dowBars').innerHTML = DAYS_ORD.map((dw,i)=>`
+    <div class="mb-row">
+      <span style="font-size:11px;color:var(--text-secondary);">${DS[dw]}</span>
+      <div class="mb-bg"><div class="mb-f" style="width:${curData[i]?Math.round(curData[i]/maxFat*100):0}%;background:${bc[i]};"></div></div>
+      <span style="font-size:11px;font-weight:500;color:var(--text-primary);text-align:right;">${curData[i]?`€${curData[i].toLocaleString('pt-PT')}`:'—'}</span>
+    </div>`).join('');
+
+  // weekly history table
+  document.getElementById('sem-body').innerHTML = [...weeks].reverse().map((w,i,arr)=>{
+    const p = arr[i+1];
+    const fatD = p ? pctDiffInline(w.fat,p.fat) : '—';
+    const pedD = p ? pctDiffInline(w.ped,p.ped) : '—';
+    const isCur = w.key === curWk;
+    return `<tr${isCur?' style="background:var(--bg-info);"':''}>
+      <td style="font-weight:500;">${w.key}${isCur?' <span style="font-size:10px;color:var(--text-info);">atual</span>':''}</td>
+      <td style="color:var(--text-secondary);">${fmtWeekRange(w.key)}</td>
+      <td>€${w.fat.toLocaleString('pt-PT')}</td>
+      <td>${fatD}</td>
+      <td>${w.ped}</td>
+      <td>${pedD}</td>
+      <td>€${w.ped>0?(w.fat/w.ped).toFixed(1):'—'}</td>
+      <td>€${Math.round(w.fat/w.n).toLocaleString('pt-PT')}</td>
+      <td>${w.avgEnt?`<span class="b ${w.avgEnt>35?'b-dn':w.avgEnt>30?'b-w':'b-ok'}">${w.avgEnt}m</span>`:'—'}</td>
+      <td>${w.avgFc?`${w.avgFc}%`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── PROJEÇÃO MENSAL ── */
+function renderProjection(curM, months, today) {
+  const el = document.getElementById('m-proj');
+  const [y, mo] = curM.key.split('-').map(Number);
+  const daysInMonth = new Date(y, mo, 0).getDate();
+  const dayOfMonth  = parseInt(today.slice(8), 10);
+
+  // Only project from day 15 onwards, or if we have enough data (>= 7 days)
+  if (dayOfMonth < 15 && curM.n < 7) {
+    document.getElementById('m-proj-card').style.display = 'none';
+    return;
+  }
+  document.getElementById('m-proj-card').style.display = '';
+
+  // Current month pace: fat per registered day
+  const fatPerDay = curM.fat / curM.n;
+  // Days remaining (from today to end of month, not yet registered)
+  const daysRemaining = daysInMonth - dayOfMonth;
+  const projected = Math.round(curM.fat + fatPerDay * daysRemaining);
+
+  // Historical benchmark: same month in previous years (or previous same month)
+  const samePrevMonths = months.filter(m => {
+    const [my, mm] = m.key.split('-');
+    return mm === curM.key.slice(5) && my < String(y);
+  });
+  // Also use previous months this year as trend reference
+  const prevSameMonth = samePrevMonths.length ? samePrevMonths[samePrevMonths.length-1] : null;
+  // Average of all previous same-month records
+  const histAvg = samePrevMonths.length
+    ? Math.round(samePrevMonths.reduce((s,m)=>s+m.fat,0)/samePrevMonths.length)
+    : null;
+  // Previous month (last month)
+  const curIdx  = months.indexOf(curM);
+  const prevM   = curIdx > 0 ? months[curIdx-1] : null;
+
+  // Determine status vs historical
+  let statusCls = 'proj-ok', statusTxt = 'Em linha com o histórico', statusIcon = '→';
+  if (histAvg) {
+    const dev = (projected - histAvg) / histAvg * 100;
+    if      (dev >  5) { statusCls='proj-up'; statusTxt=`Acima do histórico (+${Math.round(dev)}%)`; statusIcon='↑'; }
+    else if (dev < -5) { statusCls='proj-dn'; statusTxt=`Abaixo do histórico (${Math.round(dev)}%)`; statusIcon='↓'; }
+    else               { statusCls='proj-ok'; statusTxt=`Em linha com o histórico (${dev>=0?'+':''}${Math.round(dev)}%)`; statusIcon='→'; }
+  }
+
+  // Progress bar: days elapsed vs total
+  const pctDone = Math.round((dayOfMonth / daysInMonth) * 100);
+  const pctFat  = histAvg ? Math.min(Math.round((curM.fat / histAvg) * 100), 150) : null;
+
+  const rows = [
+    { lbl: 'Faturado até hoje', val: `€${curM.fat.toLocaleString('pt-PT')}`, sub: `${dayOfMonth} de ${daysInMonth} dias (${pctDone}% do mês)`, pct: pctDone, clr: '#378ADD' },
+    { lbl: 'Projeção fim do mês', val: `€${projected.toLocaleString('pt-PT')}`, sub: `ao ritmo atual de €${Math.round(fatPerDay).toLocaleString('pt-PT')}/dia`, pct: histAvg ? Math.min(Math.round(projected/histAvg*100),150) : pctDone, clr: projected > (histAvg||projected) ? '#3B6D11' : projected < (histAvg||projected)*0.95 ? '#A32D2D' : '#185FA5' },
+  ];
+  if (histAvg) rows.push({ lbl: `Histórico ${curM.key.slice(5)==='04'?'Abr':curM.key.slice(5)==='05'?'Mai':curM.key.slice(5)==='03'?'Mar':curM.key.slice(5)==='01'?'Jan':curM.key.slice(5)==='02'?'Fev':curM.key.slice(5)==='06'?'Jun':curM.key.slice(5)==='07'?'Jul':curM.key.slice(5)==='08'?'Ago':curM.key.slice(5)==='09'?'Set':curM.key.slice(5)==='10'?'Out':curM.key.slice(5)==='11'?'Nov':'Dez'} (média)`, val: `€${histAvg.toLocaleString('pt-PT')}`, sub: `referência de ${samePrevMonths.length} ano${samePrevMonths.length>1?'s':''}`, pct: 100, clr: '#BA7517' });
+  if (prevM) rows.push({ lbl: `Mês anterior (${fmtMonth(prevM.key)})`, val: `€${prevM.fat.toLocaleString('pt-PT')}`, sub: `${prevM.n} dias registados`, pct: histAvg ? Math.min(Math.round(prevM.fat/histAvg*100),150) : null, clr: '#B4B2A9' });
+
+  const maxBar = Math.max(...rows.filter(r=>r.pct!==null).map(r=>r.pct), 100);
+
+  el.innerHTML = `
+    <div class="proj-wrap">
+      <div class="proj-main">
+        <p style="font-size:11px;color:var(--text-secondary);margin-bottom:4px;">Projeção para ${fmtMonthFull(curM.key)}</p>
+        <p class="proj-val">€${projected.toLocaleString('pt-PT')}</p>
+        <span class="proj-badge ${statusCls}">${statusIcon} ${statusTxt}</span>
+        ${histAvg ? `<p class="proj-hint">Referência histórica: €${histAvg.toLocaleString('pt-PT')}<br>Dias restantes: ${daysRemaining} · Ritmo: €${Math.round(fatPerDay).toLocaleString('pt-PT')}/dia</p>` : `<p class="proj-hint">Sem histórico do mesmo mês em anos anteriores.<br>Dias restantes: ${daysRemaining} · Ritmo: €${Math.round(fatPerDay).toLocaleString('pt-PT')}/dia</p>`}
+      </div>
+      <div class="proj-bars">
+        ${rows.map(r=>`
+          <div class="proj-bar-row">
+            <span style="color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${r.lbl}">${r.lbl}</span>
+            <div class="mb-bg" title="${r.sub}">
+              <div class="mb-f" style="width:${r.pct!==null?Math.round(r.pct/maxBar*100):0}%;background:${r.clr};opacity:0.85;"></div>
+            </div>
+            <span style="font-weight:500;color:var(--text-primary);text-align:right;">${r.val}</span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+/* ── MENSAL ── */
+function renderMensal() {
+  const MN = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const months = aggregateByMonth(allDays);
+  if (!months.length) {
+    document.getElementById('m-comp').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Sem dados suficientes.</p>';
+    return;
+  }
+  const today = todayStr();
+  const curMk = monthKey(today);
+  const curM  = months.find(m => m.key === curMk) || months[months.length-1];
+  const curIdx = months.indexOf(curM);
+  const prevM  = curIdx > 0 ? months[curIdx-1] : null;
+
+  // KPIs
+  document.getElementById('m-fat').textContent  = `€${curM.fat.toLocaleString('pt-PT')}`;
+  document.getElementById('m-fat-s').innerHTML  = prevM ? pctDiff(curM.fat, prevM.fat, 'vs mês ant.') : '<span style="font-size:11px;color:var(--text-secondary);">primeiro mês</span>';
+  document.getElementById('m-ped').textContent  = curM.ped;
+  document.getElementById('m-ped-s').innerHTML  = prevM ? pctDiff(curM.ped, prevM.ped, 'vs mês ant.') : '';
+  const tick = curM.ped > 0 ? (curM.fat/curM.ped).toFixed(1) : '—';
+  document.getElementById('m-tick').textContent = tick !== '—' ? `€${tick}` : '—';
+  document.getElementById('m-tick-s').innerHTML = prevM && prevM.ped > 0 ? pctDiff(parseFloat(tick), prevM.fat/prevM.ped, 'vs mês ant.') : '';
+  document.getElementById('m-dias').textContent = curM.n;
+  document.getElementById('m-dias-s').innerHTML = `<span style="font-size:11px;color:var(--text-secondary);">${fmtMonthFull(curM.key)}</span>`;
+  document.getElementById('m-ent').textContent  = curM.avgEnt ? `${curM.avgEnt} min` : '—';
+  if (curM.avgEnt) document.getElementById('m-ent-s').innerHTML = colorSpan(curM.avgEnt,30,35,'dentro do alvo','atenção','crítico');
+  document.getElementById('m-can').textContent  = curM.can;
+  const cPct = curM.ped > 0 ? ((curM.can/curM.ped)*100).toFixed(1) : 0;
+  const cc = cPct>5?'#A32D2D':cPct>3?'#BA7517':'#3B6D11';
+  document.getElementById('m-can-s').innerHTML  = `<span style="color:${cc};font-size:11px;">${cPct}% dos pedidos</span>`;
+  const mPpd = curM.n>0 ? Math.round(curM.ped/curM.n) : null;
+  document.getElementById('m-ppd').textContent = mPpd !== null ? mPpd : '—';
+  document.getElementById('m-ppd-s').innerHTML = prevM&&prevM.n>0 ? pctDiff(mPpd, Math.round(prevM.ped/prevM.n), 'vs mês ant.') : '';
+  document.getElementById('m-fc').textContent   = curM.avgFc ? `${curM.avgFc}%` : '—';
+  if (curM.avgFc) document.getElementById('m-fc-s').innerHTML = colorSpan(curM.avgFc,29,32,'dentro do alvo','atenção','acima do alvo');
+
+  // Projection
+  renderProjection(curM, months, today);
+
+  // Chart — últimos 12 meses
+  const last12 = months.slice(-12);
+  document.getElementById('m-chart-sub').textContent = `${fmtMonth(last12[0].key)} → ${fmtMonth(last12[last12.length-1].key)}`;
+  const dark = isDark();
+  const tc = dark?'#B4B2A9':'#888780', gc = dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)';
+  if (chartM) chartM.destroy();
+  chartM = new Chart(document.getElementById('cMonth'), {
+    data: {
+      labels: last12.map(m => fmtMonth(m.key)),
+      datasets: [
+        { type:'bar',  data:last12.map(m=>m.fat), backgroundColor: last12.map(m=>m.key===curMk?'#185FA5':'#85B7EB'), borderRadius:3, yAxisID:'y', order:2 },
+        { type:'line', data:last12.map(m=>m.ped), borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,.1)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#1D9E75', yAxisID:'y1', order:1 }
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?`€${ctx.raw.toLocaleString('pt-PT')}`:ctx.raw+' ped.'}} },
+      scales:{ x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}}, y:{position:'left',ticks:{color:tc,font:{size:10},callback:v=>`€${v}`},grid:{color:gc}}, y1:{position:'right',ticks:{color:tc,font:{size:10}},grid:{display:false}} }
+    }
+  });
+
+  // Comparison card
+  if (prevM) {
+    const rows = [
+      ['Faturação', `€${curM.fat.toLocaleString('pt-PT')}`, `€${prevM.fat.toLocaleString('pt-PT')}`, curM.fat, prevM.fat],
+      ['Pedidos',   curM.ped, prevM.ped, curM.ped, prevM.ped],
+      ['Ticket médio', `€${(curM.fat/curM.ped).toFixed(1)}`, `€${(prevM.fat/prevM.ped).toFixed(1)}`, curM.fat/curM.ped, prevM.fat/prevM.ped],
+      ['Fat./dia',  `€${Math.round(curM.fat/curM.n).toLocaleString('pt-PT')}`, `€${Math.round(prevM.fat/prevM.n).toLocaleString('pt-PT')}`, curM.fat/curM.n, prevM.fat/prevM.n],
+      ['Ped./dia',  Math.round(curM.ped/curM.n), Math.round(prevM.ped/prevM.n), curM.ped/curM.n, prevM.ped/prevM.n],
+    ];
+    if (curM.avgEnt&&prevM.avgEnt) rows.push(['Entrega média', `${curM.avgEnt}m`, `${prevM.avgEnt}m`, prevM.avgEnt, curM.avgEnt]); // inverted: lower is better
+    document.getElementById('m-comp').innerHTML = `
+      <p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">${fmtMonthFull(curM.key)} vs ${fmtMonthFull(prevM.key)}</p>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        <thead><tr><th style="text-align:left;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Indicador</th><th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">${fmtMonth(curM.key)}</th><th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">${fmtMonth(prevM.key)}</th><th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Δ</th></tr></thead>
+        <tbody>${rows.map(([lbl,cv,pv,cn,pn])=>{
+          const d=Math.round((cn-pn)/pn*100); const c=d>0?'#3B6D11':d<0?'#A32D2D':'#5F5E5A';
+          return `<tr style="border-top:0.5px solid var(--border-light);">
+            <td style="padding:5px 6px;">${lbl}</td>
+            <td style="padding:5px 6px;text-align:right;font-weight:500;">${cv}</td>
+            <td style="padding:5px 6px;text-align:right;color:var(--text-secondary);">${pv}</td>
+            <td style="padding:5px 6px;text-align:right;"><span style="color:${c};font-weight:500;">${d>0?'+':''}${d}%</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  } else {
+    document.getElementById('m-comp').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);padding:12px 0;">Sem mês anterior para comparar.</p>';
+  }
+
+  // Summary table
+  document.getElementById('men-body').innerHTML = [...months].reverse().map((m,i,arr)=>{
+    const p = arr[i+1];
+    const fatD = p ? pctDiffInline(m.fat, p.fat) : '—';
+    const pedD = p ? pctDiffInline(m.ped, p.ped) : '—';
+    const isCur = m.key === curMk;
+    return `<tr${isCur?' style="background:var(--bg-info);"':''}>
+      <td style="font-weight:500;">${fmtMonthFull(m.key)}${isCur?' <span style="font-size:10px;color:var(--text-info);">atual</span>':''}</td>
+      <td>€${m.fat.toLocaleString('pt-PT')}</td>
+      <td>${fatD}</td>
+      <td>${m.ped}</td>
+      <td>${pedD}</td>
+      <td>€${m.ped>0?(m.fat/m.ped).toFixed(1):'—'}</td>
+      <td>€${Math.round(m.fat/m.n).toLocaleString('pt-PT')}</td>
+      <td>${Math.round(m.ped/m.n)}</td>
+      <td>${m.avgEnt?`<span class="b ${m.avgEnt>35?'b-dn':m.avgEnt>30?'b-w':'b-ok'}">${m.avgEnt}m</span>`:'—'}</td>
+      <td>${m.avgFc?`${m.avgFc}%`:'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* ── ANUAL ── */
+function renderAnual() {
+  const MN_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const years  = aggregateByYear(allDays);
+  const months = aggregateByMonth(allDays);
+  if (!years.length) {
+    document.getElementById('a-comp').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Sem dados suficientes.</p>';
+    return;
+  }
+  const curYk  = yearKey(todayStr());
+  const curY   = years.find(y=>y.key===curYk) || years[years.length-1];
+  const curIdx = years.indexOf(curY);
+  const prevY  = curIdx > 0 ? years[curIdx-1] : null;
+
+  // KPIs
+  document.getElementById('a-fat').textContent  = `€${curY.fat.toLocaleString('pt-PT')}`;
+  document.getElementById('a-fat-s').innerHTML  = prevY ? pctDiff(curY.fat, prevY.fat, 'vs ano ant.') : '<span style="font-size:11px;color:var(--text-secondary);">primeiro ano</span>';
+  document.getElementById('a-ped').textContent  = curY.ped;
+  document.getElementById('a-ped-s').innerHTML  = prevY ? pctDiff(curY.ped, prevY.ped, 'vs ano ant.') : '';
+  const tick = curY.ped>0?(curY.fat/curY.ped).toFixed(1):'—';
+  document.getElementById('a-tick').textContent = tick!=='—'?`€${tick}`:'—';
+  document.getElementById('a-tick-s').innerHTML = prevY&&prevY.ped>0?pctDiff(parseFloat(tick),prevY.fat/prevY.ped,'vs ano ant.'):'';
+  document.getElementById('a-dias').textContent = curY.n;
+  document.getElementById('a-dias-s').innerHTML = `<span style="font-size:11px;color:var(--text-secondary);">${curY.numMonths} meses com dados</span>`;
+  // best month this year
+  const curYMonths = months.filter(m=>m.key.startsWith(curYk));
+  const bestM = curYMonths.length ? [...curYMonths].sort((a,b)=>b.fat-a.fat)[0] : null;
+  document.getElementById('a-bm').textContent   = bestM ? fmtMonth(bestM.key) : '—';
+  document.getElementById('a-bm-s').innerHTML   = bestM ? `<span style="font-size:11px;color:var(--text-secondary);">€${bestM.fat.toLocaleString('pt-PT')}</span>` : '';
+  const avgFmes = curY.numMonths>0 ? Math.round(curY.fat/curY.numMonths) : null;
+  document.getElementById('a-fmes').textContent = avgFmes ? `€${avgFmes.toLocaleString('pt-PT')}` : '—';
+  document.getElementById('a-fmes-s').innerHTML = prevY&&prevY.numMonths>0 ? pctDiff(avgFmes, prevY.fat/prevY.numMonths, 'vs ano ant.') : '';
+  const aFpd = curY.n>0 ? Math.round(curY.fat/curY.n) : null;
+  document.getElementById('a-fpd').textContent = aFpd ? `€${aFpd.toLocaleString('pt-PT')}` : '—';
+  document.getElementById('a-fpd-s').innerHTML = prevY&&prevY.n>0 ? pctDiff(aFpd, Math.round(prevY.fat/prevY.n), 'vs ano ant.') : '';
+  document.getElementById('a-fc').textContent   = curY.avgFc ? `${curY.avgFc}%` : '—';
+  if (curY.avgFc) document.getElementById('a-fc-s').innerHTML = colorSpan(curY.avgFc,29,32,'dentro do alvo','atenção','acima do alvo');
+
+  // Chart — faturação mensal do ano atual + anterior (se existir)
+  const allMonthKeys = Array.from({length:12},(_,i)=>`${curYk}-${String(i+1).padStart(2,'0')}`);
+  const curYData  = allMonthKeys.map(k=>{ const m=months.find(x=>x.key===k); return m?m.fat:null; });
+  const prevYData = prevY ? allMonthKeys.map(k=>{ const pk=`${prevY.key}-${k.slice(5)}`; const m=months.find(x=>x.key===pk); return m?m.fat:null; }) : null;
+  document.getElementById('a-chart-sub').textContent = prevY ? `${curYk} vs ${prevY.key}` : curYk;
+  const dark=isDark(), tc=dark?'#B4B2A9':'#888780', gc=dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)';
+  if (chartY) chartY.destroy();
+  const datasets = [{ type:'bar', label:curYk, data:curYData, backgroundColor:'#378ADD', borderRadius:3, yAxisID:'y', order:2 }];
+  if (prevYData) datasets.push({ type:'line', label:prevY.key, data:prevYData, borderColor:'#BA7517', backgroundColor:'rgba(186,117,23,.08)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#BA7517', yAxisID:'y', order:1, borderDash:[4,3] });
+  chartY = new Chart(document.getElementById('cYear'), {
+    data:{ labels:MN_PT, datasets },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:!!prevY, position:'top', labels:{color:tc,font:{size:11},boxWidth:12} }, tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: €${(ctx.raw||0).toLocaleString('pt-PT')}`}} },
+      scales:{ x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}}, y:{ticks:{color:tc,font:{size:10},callback:v=>`€${v}`},grid:{color:gc}} }
+    }
+  });
+
+  // Comparison card
+  if (prevY) {
+    const rows=[
+      ['Faturação',    `€${curY.fat.toLocaleString('pt-PT')}`, `€${prevY.fat.toLocaleString('pt-PT')}`, curY.fat, prevY.fat],
+      ['Pedidos',       curY.ped, prevY.ped, curY.ped, prevY.ped],
+      ['Ticket médio', `€${(curY.fat/curY.ped).toFixed(1)}`, `€${(prevY.fat/prevY.ped).toFixed(1)}`, curY.fat/curY.ped, prevY.fat/prevY.ped],
+      ['Fat./mês',     `€${Math.round(curY.fat/curY.numMonths).toLocaleString('pt-PT')}`, `€${Math.round(prevY.fat/prevY.numMonths).toLocaleString('pt-PT')}`, curY.fat/curY.numMonths, prevY.fat/prevY.numMonths],
+      ['Fat./dia',     `€${Math.round(curY.fat/curY.n).toLocaleString('pt-PT')}`, `€${Math.round(prevY.fat/prevY.n).toLocaleString('pt-PT')}`, curY.fat/curY.n, prevY.fat/prevY.n],
+    ];
+    document.getElementById('a-comp').innerHTML = `
+      <p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">${curYk} vs ${prevY.key}</p>
+      <table style="width:100%;font-size:12px;border-collapse:collapse;">
+        <thead><tr><th style="text-align:left;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Indicador</th><th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">${curYk}</th><th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">${prevY.key}</th><th style="text-align:right;padding:4px 6px;color:var(--text-secondary);font-weight:500;">Δ</th></tr></thead>
+        <tbody>${rows.map(([lbl,cv,pv,cn,pn])=>{
+          const d=Math.round((cn-pn)/pn*100); const c=d>0?'#3B6D11':d<0?'#A32D2D':'#5F5E5A';
+          return `<tr style="border-top:0.5px solid var(--border-light);">
+            <td style="padding:5px 6px;">${lbl}</td>
+            <td style="padding:5px 6px;text-align:right;font-weight:500;">${cv}</td>
+            <td style="padding:5px 6px;text-align:right;color:var(--text-secondary);">${pv}</td>
+            <td style="padding:5px 6px;text-align:right;"><span style="color:${c};font-weight:500;">${d>0?'+':''}${d}%</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+  } else {
+    document.getElementById('a-comp').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);padding:12px 0;">Sem ano anterior para comparar.</p>';
+  }
+
+  // Summary table
+  document.getElementById('ano-body').innerHTML = [...years].reverse().map((y,i,arr)=>{
+    const p = arr[i+1];
+    const fatD = p ? pctDiffInline(y.fat,p.fat) : '—';
+    const pedD = p ? pctDiffInline(y.ped,p.ped) : '—';
+    const isCur = y.key === curYk;
+    const yMonths = months.filter(m=>m.key.startsWith(y.key));
+    const bm = yMonths.length ? [...yMonths].sort((a,b)=>b.fat-a.fat)[0] : null;
+    return `<tr${isCur?' style="background:var(--bg-info);"':''}>
+      <td style="font-weight:500;">${y.key}${isCur?' <span style="font-size:10px;color:var(--text-info);">atual</span>':''}</td>
+      <td>€${y.fat.toLocaleString('pt-PT')}</td>
+      <td>${fatD}</td>
+      <td>${y.ped}</td>
+      <td>${pedD}</td>
+      <td>€${y.ped>0?(y.fat/y.ped).toFixed(1):'—'}</td>
+      <td>€${Math.round(y.fat/y.n).toLocaleString('pt-PT')}</td>
+      <td>${y.numMonths}</td>
+      <td>${bm?fmtMonth(bm.key):'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function pctDiffInline(v,p) {
+  if (!p) return '—';
+  const d = Math.round((v-p)/p*100);
+  const c = d>0?'#3B6D11':d<0?'#A32D2D':'#5F5E5A';
+  return `<span style="color:${c};font-weight:500;">${d>0?'+':''}${d}%</span>`;
+}
+
+/* ── CSV export ── */
+function exportCSV() {
+  const hdr = 'Data,Dia,Faturação,Pedidos,Ticket,Entregadores,Ped/Entregador,Entrega(min),Cancelamentos,Delivery%,Agr%,CarryOut%,DineIn%,Online%,FoodCost%,Pico,Notas';
+  const rows = [...allDays].sort((a,b) => b.date.localeCompare(a.date)).map(r => {
+    const tick = r.ped > 0 ? (r.fat / r.ped).toFixed(1) : '';
+    const ppe  = r.drv && r.ped ? Math.round(r.ped / r.drv) : '';
+    return [r.date, dowN(r.date), r.fat, r.ped, tick, r.drv||'', ppe,
+            r.ent||'', r.can||0, r.del||'', r.agr||'', r.tak||'', r.din||'',
+            r.onl||'', r.fc||'',
+            r.pico||'', `"${(r.notas||'').replace(/"/g,"'")}"`].join(',');
+  });
+  const blob = new Blob([[hdr, ...rows].join('\n')], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `dominos_vendas_${todayStr()}.csv`;
+  a.click();
+}
+
+/* ── theme toggle ── */
+function toggleTheme() {
+  const root = document.documentElement;
+  const cur  = root.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  root.setAttribute('data-theme', next);
+  document.getElementById('themeBtn').textContent = next === 'dark' ? 'Modo claro' : 'Modo escuro';
+  localStorage.setItem('dp_theme', next);
+  const active = ['dash','sem','men','ano'].find(t => document.getElementById('tab-'+t).style.display !== 'none');
+  if (active === 'dash') renderDash();
+  else if (active === 'sem')  renderSemanal();
+  else if (active === 'men') renderMensal();
+  else if (active === 'ano') renderAnual();
+}
+
+/* ── INIT ── */
+async function init() {
+  const savedTheme = localStorage.getItem('dp_theme');
+  if (savedTheme) {
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    document.getElementById('themeBtn').textContent = savedTheme === 'dark' ? 'Modo claro' : 'Modo escuro';
+  }
+  document.getElementById('f-date').value = todayStr();
+  showLoading('A sincronizar dados...');
+  try {
+    allDays = await load();
+  } catch(e) {
+    console.error(e);
+  } finally {
+    hideLoading();
+  }
+  showTab('dash');
+}
+init();
+</script>
+</body>
+</html>
