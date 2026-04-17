@@ -535,21 +535,25 @@ let chartT = null, chartC = null, chartM = null, chartY = null, chartSem = null,
 /* ══════════════════════════════════════════
    SUPABASE CONFIG — substitui pelos teus valores
    ══════════════════════════════════════════ */
-const SUPABASE_URL  = 'SUPABASE_URL_AQUI';
-const SUPABASE_ANON = 'SUPABASE_ANON_KEY_AQUI';
+const SUPABASE_URL  = 'https://uvnxrzndsockucwlpgfp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV2bnhyem5kc29ja3Vjd2xwZ2ZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYzNTQ4MDEsImV4cCI6MjA5MTkzMDgwMX0.yInVJPSCMhnK0r-ddwW-LwHXw6u5kGe1hDYEIbofQ4g';
 const TABLE         = 'dias';
 
 /* ── Supabase REST helpers ── */
 async function sbFetch(path, opts = {}) {
+  const { method = 'GET', body, prefer, headers: extraHeaders } = opts;
+  const headers = {
+    'apikey':        SUPABASE_ANON,
+    'Authorization': `Bearer ${SUPABASE_ANON}`,
+    'Content-Type':  'application/json',
+  };
+  if (prefer) headers['Prefer'] = prefer;
+  if (extraHeaders) Object.assign(headers, extraHeaders);
+
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
-    headers: {
-      'apikey':        SUPABASE_ANON,
-      'Authorization': `Bearer ${SUPABASE_ANON}`,
-      'Content-Type':  'application/json',
-      'Prefer':        opts.prefer || '',
-      ...opts.headers
-    },
-    ...opts
+    method,
+    headers,
+    ...(body !== undefined ? { body: JSON.stringify(body) } : {})
   });
   if (!res.ok) {
     const err = await res.text();
@@ -571,7 +575,6 @@ async function load() {
     }));
   } catch(e) {
     console.error('Erro ao carregar dados:', e);
-    // fallback to localStorage cache
     try { return JSON.parse(localStorage.getItem(SK) || '[]'); } catch(_) { return []; }
   }
 }
@@ -581,10 +584,8 @@ async function saveDay(rec) {
   await sbFetch(`${TABLE}`, {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
-    headers: { 'Prefer': 'resolution=merge-duplicates' },
-    body: JSON.stringify(rec)
+    body: rec
   });
-  // update local cache
   try { localStorage.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
 }
 
@@ -596,7 +597,7 @@ async function deleteDay(date) {
 
 /* ── storage: delete all ── */
 async function deleteAll() {
-  await sbFetch(`${TABLE}?date=neq.0000-00-00`, { method: 'DELETE' });
+  await sbFetch(`${TABLE}?date=gte.0000-00-00`, { method: 'DELETE' });
   try { localStorage.removeItem(SK); } catch(_) {}
 }
 
@@ -957,7 +958,10 @@ async function submitDay() {
     msg.innerHTML = `<span style="color:#3B6D11;">✓ Dia ${fmtD(date)} guardado.</span>`;
     setTimeout(() => { msg.textContent = ''; }, 3000);
   } catch(e) {
-    msg.innerHTML = `<span style="color:#A32D2D;">Erro ao guardar: ${e.message}</span>`;
+    let hint = e.message;
+    if (hint.includes('405')) hint += ' — Verifica se a coluna "date" é Primary Key na tabela Supabase.';
+    if (hint.includes('42501') || hint.includes('403')) hint += ' — Desativa RLS na tabela em Supabase → Table Editor → dias → RLS.';
+    msg.innerHTML = `<span style="color:#A32D2D;">Erro: ${hint}</span>`;
   }
 }
 
