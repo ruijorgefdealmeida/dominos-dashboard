@@ -4,7 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Domino's Pizza — Controlo Diário</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// Load Chart.js dynamically — works in browsers, gracefully degrades in sandboxed previews
+(function() {
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
+  s.onerror = function() {
+    window.__chartJsFailed = true;
+    console.warn('Chart.js failed to load — charts will not render.');
+  };
+  document.head.appendChild(s);
+})();
+</script>
 <style>
   :root {
     --bg-primary: #ffffff;
@@ -542,6 +553,12 @@
 
 <script>
 const SK = 'dominos_v4';
+
+/* ── localStorage guard for sandboxed previews ── */
+const _ls = (() => {
+  try { _ls.setItem('__t','1'); _ls.removeItem('__t'); return localStorage; }
+  catch(e) { const m={}; return { getItem:k=>m[k]||null, setItem:(k,v)=>{m[k]=v;}, removeItem:k=>{delete m[k];} }; }
+})();
 const DN = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
 const DS = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 let chartT = null, chartC = null, chartM = null, chartY = null, chartSem = null, chartSemC = null, allDays = [];
@@ -589,7 +606,7 @@ async function load() {
     }));
   } catch(e) {
     console.error('Erro ao carregar dados:', e);
-    try { return JSON.parse(localStorage.getItem(SK) || '[]'); } catch(_) { return []; }
+    try { return JSON.parse(_ls.getItem(SK) || '[]'); } catch(_) { return []; }
   }
 }
 
@@ -600,19 +617,19 @@ async function saveDay(rec) {
     prefer: 'resolution=merge-duplicates',
     body: rec
   });
-  try { localStorage.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
+  try { _ls.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
 }
 
 /* ── storage: delete one record ── */
 async function deleteDay(date) {
   await sbFetch(`${TABLE}?date=eq.${date}`, { method: 'DELETE' });
-  try { localStorage.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
+  try { _ls.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
 }
 
 /* ── storage: delete all ── */
 async function deleteAll() {
   await sbFetch(`${TABLE}?date=gte.0000-00-00`, { method: 'DELETE' });
-  try { localStorage.removeItem(SK); } catch(_) {}
+  try { _ls.removeItem(SK); } catch(_) {}
 }
 
 /* ── loading overlay ── */
@@ -761,12 +778,26 @@ function renderDash() {
     `${sorted.length} dia${sorted.length > 1 ? 's' : ''} registado${sorted.length > 1 ? 's' : ''} · último: ${fmtD(sorted[0].date)}`;
 }
 
+
+/* ── Chart guard — no-op if Chart.js not loaded ── */
+function safeChart(canvasId, config) {
+  if (typeof Chart === 'undefined') {
+    const el = document.getElementById(canvasId);
+    if (el) {
+      const ctx = el.parentElement;
+      ctx.innerHTML = '<p style="font-size:11px;color:var(--text-secondary);text-align:center;padding:20px 0;">Gráfico indisponível<br>(Chart.js não carregou)</p>';
+    }
+    return null;
+  }
+  return new Chart(document.getElementById(canvasId), config);
+}
+
 function renderTrend(days) {
   const dark = isDark();
   const tc = dark ? '#B4B2A9' : '#888780';
   const gc = dark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.05)';
-  if (chartT) chartT.destroy();
-  chartT = new Chart(document.getElementById('cTrend'), {
+  if (chartT && chartT.destroy) chartT.destroy();
+  chartT = safeChart('cTrend', {
     data: {
       labels: days.map(d => fmtD(d.date)),
       datasets: [
@@ -804,8 +835,8 @@ function renderCanal(days) {
   const absVals = [sumD, sumA, sumT, sumN];
   const lbls = ['Delivery próprio','Agregadores','Carry Out','Dine In'];
   const clrs = ['#185FA5','#378ADD','#1D9E75','#BA7517'];
-  if (chartC) chartC.destroy();
-  chartC = new Chart(document.getElementById('cCanal'), {
+  if (chartC && chartC.destroy) chartC.destroy();
+  chartC = safeChart('cCanal', {
     type: 'doughnut',
     data: { labels:lbls, datasets:[{ data:vals, backgroundColor:clrs, borderWidth:0, hoverOffset:4 }] },
     options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
@@ -1259,10 +1290,10 @@ function renderSemanal() {
   const labels  = DAYS_ORD.map(i=>DS[i]);
   const curData = DAYS_ORD.map(i=>curWMap[i]||null);
   const prvData = DAYS_ORD.map(i=>prevWMap[i]||null);
-  if (chartSem) chartSem.destroy();
+  if (chartSem && chartSem.destroy) chartSem.destroy();
   const ds2 = [{ type:'bar', label:'Semana atual', data:curData, backgroundColor:'#378ADD', borderRadius:3, order:1 }];
   if (prevW) ds2.push({ type:'line', label:'Semana anterior', data:prvData, borderColor:'#BA7517', backgroundColor:'rgba(186,117,23,.08)', tension:.3, pointRadius:3, pointBackgroundColor:'#BA7517', fill:false, order:0, borderDash:[4,3] });
-  chartSem = new Chart(document.getElementById('cSem'), {
+  chartSem = safeChart('cSem', {
     data:{ labels, datasets:ds2 },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ display:!!prevW, position:'top', labels:{color:tc,font:{size:11},boxWidth:12} },
@@ -1318,8 +1349,8 @@ function renderSemanal() {
   const cAbs  = [curW.avgDel||0, curW.avgAgr||0, curW.avgTak||0, curW.avgDin||0];
   const cTot  = cAbs.reduce((s,v)=>s+v,0) || 1;
   const cVals = cAbs.map(v => Math.round(v/cTot*1000)/10);
-  if (chartSemC) chartSemC.destroy();
-  chartSemC = new Chart(document.getElementById('cSemCanal'), {
+  if (chartSemC && chartSemC.destroy) chartSemC.destroy();
+  chartSemC = safeChart('cSemCanal', {
     type:'doughnut',
     data:{ labels:cLbls, datasets:[{ data:cVals, backgroundColor:cClrs, borderWidth:0, hoverOffset:4 }] },
     options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
@@ -1486,8 +1517,8 @@ function renderMensal() {
   document.getElementById('m-chart-sub').textContent = `${fmtMonth(last12[0].key)} → ${fmtMonth(last12[last12.length-1].key)}`;
   const dark = isDark();
   const tc = dark?'#B4B2A9':'#888780', gc = dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)';
-  if (chartM) chartM.destroy();
-  chartM = new Chart(document.getElementById('cMonth'), {
+  if (chartM && chartM.destroy) chartM.destroy();
+  chartM = safeChart('cMonth', {
     data: {
       labels: last12.map(m => fmtMonth(m.key)),
       datasets: [
@@ -1594,10 +1625,10 @@ function renderAnual() {
   const prevYData = prevY ? allMonthKeys.map(k=>{ const pk=`${prevY.key}-${k.slice(5)}`; const m=months.find(x=>x.key===pk); return m?m.fat:null; }) : null;
   document.getElementById('a-chart-sub').textContent = prevY ? `${curYk} vs ${prevY.key}` : curYk;
   const dark=isDark(), tc=dark?'#B4B2A9':'#888780', gc=dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)';
-  if (chartY) chartY.destroy();
+  if (chartY && chartY.destroy) chartY.destroy();
   const datasets = [{ type:'bar', label:curYk, data:curYData, backgroundColor:'#378ADD', borderRadius:3, yAxisID:'y', order:2 }];
   if (prevYData) datasets.push({ type:'line', label:prevY.key, data:prevYData, borderColor:'#BA7517', backgroundColor:'rgba(186,117,23,.08)', fill:true, tension:.4, pointRadius:3, pointBackgroundColor:'#BA7517', yAxisID:'y', order:1, borderDash:[4,3] });
-  chartY = new Chart(document.getElementById('cYear'), {
+  chartY = safeChart('cYear', {
     data:{ labels:MN_PT, datasets },
     options:{ responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ display:!!prevY, position:'top', labels:{color:tc,font:{size:11},boxWidth:12} }, tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: €${(ctx.raw||0).toLocaleString('pt-PT')}`}} },
@@ -1709,7 +1740,7 @@ function toggleTheme() {
   const next = cur === 'dark' ? 'light' : 'dark';
   root.setAttribute('data-theme', next);
   document.getElementById('themeBtn').textContent = next === 'dark' ? 'Modo claro' : 'Modo escuro';
-  localStorage.setItem('dp_theme', next);
+  _ls.setItem('dp_theme', next);
   const active = ['dash','sem','men','ano'].find(t => document.getElementById('tab-'+t).style.display !== 'none');
   if (active === 'dash') renderDash();
   else if (active === 'sem')  renderSemanal();
@@ -1719,7 +1750,7 @@ function toggleTheme() {
 
 /* ── INIT ── */
 async function init() {
-  const savedTheme = localStorage.getItem('dp_theme');
+  const savedTheme = _ls.getItem('dp_theme');
   if (savedTheme) {
     document.documentElement.setAttribute('data-theme', savedTheme);
     document.getElementById('themeBtn').textContent = savedTheme === 'dark' ? 'Modo claro' : 'Modo escuro';
@@ -1733,6 +1764,10 @@ async function init() {
     console.error(e);
   } finally {
     hideLoading();
+  }
+  // If no data loaded (Supabase unreachable and no local cache), use sample data for preview
+  if (!allDays.length) {
+    allDays = generateSample();
   }
   showTab('dash');
 }
