@@ -223,6 +223,17 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-msg { font-size: 13px; color: var(--text-secondary); }
 
+  /* peak hours selector */
+  .pico-wrap { display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; }
+  .pico-slot {
+    font-size:10px; padding:2px 6px; border-radius:4px; cursor:pointer;
+    border:0.5px solid var(--border-light); background:var(--bg-secondary);
+    color:var(--text-secondary); user-select:none; transition:all .1s;
+    white-space:nowrap;
+  }
+  .pico-slot:hover { border-color:var(--border-mid); color:var(--text-primary); }
+  .pico-slot.active { background:#185FA5; color:#fff; border-color:#185FA5; }
+
   /* spacing */
   .mb-14 { margin-bottom: 14px; }
   .mb-10 { margin-bottom: 10px; }
@@ -327,24 +338,27 @@
     <p class="card-sub">Data, faturação e pedidos são obrigatórios. Os restantes campos são opcionais mas enriquecem os alertas automáticos.</p>
     <div class="form-grid">
       <div class="ff"><label>Data *</label><input type="date" id="f-date"></div>
-      <div class="ff"><label>Faturação (€) *</label><input type="number" id="f-fat" placeholder="ex: 1140" min="0" step="1"></div>
-      <div class="ff"><label>Nº de pedidos *</label><input type="number" id="f-ped" placeholder="ex: 72" min="0" step="1"></div>
-      <div class="ff"></div>
+      <div class="ff"><label>Faturação (€) *</label><input type="number" id="f-fat" placeholder="ex: 1036.76" min="0" step="0.01" oninput="calcAdt()"></div>
+      <div class="ff"><label>Nº de pedidos *</label><input type="number" id="f-ped" placeholder="ex: 61" min="0" step="1" oninput="calcAdt()"></div>
+      <div class="ff"><label>ADT — Ticket médio (auto)</label><input type="text" id="f-adt" readonly placeholder="calculado automaticamente"><p class="form-hint">= Faturação ÷ Pedidos</p></div>
 
-      <div class="ff"><label>% Delivery próprio</label><input type="number" id="f-del" placeholder="ex: 45" min="0" max="100" step="1"></div>
-      <div class="ff"><label>% Agregadores</label><input type="number" id="f-agr" placeholder="ex: 20" min="0" max="100" step="1"></div>
-      <div class="ff"><label>% Carry Out</label><input type="number" id="f-tak" placeholder="ex: 20" min="0" max="100" step="1"></div>
-      <div class="ff"><label>% Dine In</label><input type="number" id="f-din" placeholder="ex: 10" min="0" max="100" step="1"></div>
+      <div class="ff"><label>Delivery próprio (nº ped.)</label><input type="number" id="f-del" placeholder="ex: 27" min="0" step="1"></div>
+      <div class="ff"><label>Agregadores (nº ped.)</label><input type="number" id="f-agr" placeholder="ex: 8" min="0" step="1"></div>
+      <div class="ff"><label>Carry Out (nº ped.)</label><input type="number" id="f-tak" placeholder="ex: 20" min="0" step="1"></div>
+      <div class="ff"><label>Dine In (nº ped.)</label><input type="number" id="f-din" placeholder="ex: 6" min="0" step="1"></div>
 
-      <div class="ff"><label>Tempo entrega médio (min)</label><input type="number" id="f-ent" placeholder="ex: 28" min="0" step="1"></div>
+      <div class="ff"><label>Tempo entrega médio (min)</label><input type="number" id="f-ent" placeholder="ex: 28" min="0" step="0.1"></div>
       <div class="ff"><label>Cancelamentos (nº)</label><input type="number" id="f-can" placeholder="ex: 3" min="0" step="1"></div>
-      <div class="ff"><label>% Pedidos online</label><input type="number" id="f-onl" placeholder="ex: 72" min="0" max="100" step="1"></div>
-      <div class="ff"><label>Food cost (%)</label><input type="number" id="f-fc" placeholder="ex: 28" min="0" max="100" step="1"></div>
+      <div class="ff"><label>Pedidos online (nº)</label><input type="number" id="f-onl" placeholder="ex: 44" min="0" step="1"></div>
+      <div class="ff"><label>Food cost (%)</label><input type="number" id="f-fc" placeholder="ex: 28" min="0" max="100" step="0.1"></div>
 
-      <div class="ff"><label>Nº entregadores ativos</label><input type="number" id="f-drv" placeholder="ex: 5" min="0" step="1"></div>
-      <div class="ff"><label>Pico horário</label><input type="text" id="f-pico" placeholder="ex: 20h-23h" maxlength="20"></div>
-      <div class="ff"><label>Notas</label><input type="text" id="f-notas" placeholder="observações livres" maxlength="120"></div>
-      <div class="ff"></div>
+      <div class="ff"><label>Horas entregadores (h totais)</label><input type="number" id="f-drv" placeholder="ex: 15" min="0" step="0.5"><p class="form-hint">ex: 3 entregadores × 5h = 15h</p></div>
+      <div class="ff" style="grid-column:span 3;">
+        <label>Pico horário <span style="font-weight:400;color:var(--text-secondary);">(selecciona os intervalos de maior volume)</span></label>
+        <div class="pico-wrap" id="pico-slots"></div>
+        <input type="hidden" id="f-pico">
+      </div>
+      <div class="ff" style="grid-column:span 4;"><label>Notas</label><input type="text" id="f-notas" placeholder="observações livres" maxlength="180"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <button class="btn-save" onclick="submitDay()">Guardar</button>
@@ -367,7 +381,7 @@
     <table>
       <thead><tr>
         <th>Data</th><th>Dia</th><th>Faturação</th><th>Pedidos</th><th>Ticket</th>
-        <th>Entregadores</th><th>Ped/Entregador</th><th>Entrega</th><th>Cancel.</th>
+        <th>H. Entregadores</th><th>Ped/h</th><th>Entrega</th><th>Cancel.</th>
         <th>Delivery%</th><th>Agr%</th><th>CarryOut%</th><th>DineIn%</th><th>Online%</th><th>Food%</th><th>Pico</th><th>Notas</th><th></th>
       </tr></thead>
       <tbody id="hist-body"></tbody>
@@ -650,7 +664,7 @@ function generateSample() {
     const trend = 1 - (i / 180) * 0.15;
     const fat = Math.round(byD[dw] * trend * (0.88 + Math.random() * 0.24));
     const ped = Math.round(fat / (13.0 + Math.random() * 3.5));
-    const drv = dw===5||dw===6 ? 6 : dw===0 ? 5 : 3;
+    const drv = dw===5||dw===6 ? 18 : dw===0 ? 15 : 9; // hours: e.g. 3 drivers x 6h = 18h
     return {
       date: ds, fat, ped,
       del:  45 + Math.round(Math.random() * 10),
@@ -662,7 +676,7 @@ function generateSample() {
       onl:  62 + Math.round(Math.random() * 18),
       fc:   25 + Math.round(Math.random() * 8),
       drv,
-      pico: dw===6||dw===5 ? '20h-23h' : dw===0 ? '19h-21h' : '20h-21h',
+      pico: dw===6||dw===5 ? '20h00,20h30,21h00,21h30,22h00,22h30' : dw===0 ? '19h00,19h30,20h00,20h30,21h00' : '20h00,20h30,21h00',
       notas: ''
     };
   });
@@ -726,10 +740,16 @@ function renderDash() {
   document.getElementById('k-fc').textContent  = avgF ? `${avgF}%` : '—';
   if (avgF) document.getElementById('k-fc-s').innerHTML = colorSpan(avgF, 29, 32, 'dentro do alvo (<30%)', 'atenção', 'acima do alvo');
 
-  const wAgr   = L7.filter(r => r.agr > 0);
-  const avgAgr = wAgr.length ? Math.round(wAgr.reduce((s,r) => s + r.agr, 0) / wAgr.length) : null;
-  document.getElementById('k-agr').textContent  = avgAgr !== null ? `${avgAgr}%` : '—';
-  document.getElementById('k-agr-s').innerHTML  = avgAgr !== null ? `<span style="color:${avgAgr>30?'#A32D2D':avgAgr>20?'#BA7517':'#3B6D11'};font-size:11px;">${avgAgr>30?'comissões elevadas':avgAgr>20?'monitorizar':'dentro do normal'}</span>` : '';
+  // % agregadores: agr/total canal pedidos per day average
+  const agrPct = (() => {
+    const days7 = L7.filter(r => (r.del||0)+(r.agr||0)+(r.tak||0)+(r.din||0) > 0);
+    if (!days7.length) return null;
+    const tAgr = days7.reduce((s,r)=>s+(r.agr||0),0);
+    const tAll = days7.reduce((s,r)=>s+(r.del||0)+(r.agr||0)+(r.tak||0)+(r.din||0),0);
+    return tAll > 0 ? Math.round(tAgr/tAll*100) : null;
+  })();
+  document.getElementById('k-agr').textContent  = agrPct !== null ? `${agrPct}%` : '—';
+  document.getElementById('k-agr-s').innerHTML  = agrPct !== null ? `<span style="color:${agrPct>30?'#A32D2D':agrPct>20?'#BA7517':'#3B6D11'};font-size:11px;">${agrPct>30?'comissões elevadas':agrPct>20?'monitorizar':'dentro do normal'}</span>` : '';
 
   renderTrend(sorted.slice(0, 14).reverse());
   renderCanal(L7);
@@ -767,13 +787,21 @@ function renderTrend(days) {
 }
 
 function renderCanal(days) {
+  // Values stored as nº of orders — sum and convert to %
   const wD  = days.filter(r => r.del > 0), wA = days.filter(r => r.agr > 0);
   const wT  = days.filter(r => r.tak > 0), wN = days.filter(r => r.din > 0);
-  const aD  = wD.length ? Math.round(wD.reduce((s,r) => s+r.del, 0)/wD.length) : 45;
-  const aA  = wA.length ? Math.round(wA.reduce((s,r) => s+r.agr, 0)/wA.length) : 20;
-  const aT  = wT.length ? Math.round(wT.reduce((s,r) => s+r.tak, 0)/wT.length) : 25;
-  const aN  = wN.length ? Math.round(wN.reduce((s,r) => s+r.din, 0)/wN.length) : 10;
-  const vals = [aD, aA, aT, aN];
+  const sumD = wD.reduce((s,r) => s+r.del, 0);
+  const sumA = wA.reduce((s,r) => s+r.agr, 0);
+  const sumT = wT.reduce((s,r) => s+r.tak, 0);
+  const sumN = wN.reduce((s,r) => s+r.din, 0);
+  const total = sumD + sumA + sumT + sumN || 1;
+  // Convert to % rounded to 1 decimal
+  const pD = Math.round(sumD / total * 1000) / 10;
+  const pA = Math.round(sumA / total * 1000) / 10;
+  const pT = Math.round(sumT / total * 1000) / 10;
+  const pN = Math.round(sumN / total * 1000) / 10;
+  const vals = [pD || 45, pA || 20, pT || 25, pN || 10];
+  const absVals = [sumD, sumA, sumT, sumN];
   const lbls = ['Delivery próprio','Agregadores','Carry Out','Dine In'];
   const clrs = ['#185FA5','#378ADD','#1D9E75','#BA7517'];
   if (chartC) chartC.destroy();
@@ -781,14 +809,14 @@ function renderCanal(days) {
     type: 'doughnut',
     data: { labels:lbls, datasets:[{ data:vals, backgroundColor:clrs, borderWidth:0, hoverOffset:4 }] },
     options: { responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}%`}} } }
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}% (${absVals[ctx.dataIndex]} ped.)`}} } }
   });
   document.getElementById('cLeg').innerHTML = lbls.map((l,i) => `
     <div class="cl-row">
       <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:12px;">
         <span class="cl-dot" style="background:${clrs[i]};"></span>${l}
       </span>
-      <span style="font-weight:500;font-size:12px;color:var(--text-primary);">${vals[i]}%</span>
+      <span style="font-weight:500;font-size:12px;color:var(--text-primary);">${vals[i]}% <span style="font-weight:400;color:var(--text-secondary);">(${absVals[i]} ped.)</span></span>
     </div>`).join('');
 }
 
@@ -808,10 +836,22 @@ function renderDow(sorted) {
 }
 
 function renderAddKPIs(L7) {
-  const wA = L7.filter(r => r.agr > 0);
-  const avgA = wA.length ? Math.round(wA.reduce((s,r) => s+r.agr, 0)/wA.length) : null;
-  const wO = L7.filter(r => r.onl > 0);
-  const avgO = wO.length ? Math.round(wO.reduce((s,r) => s+r.onl, 0)/wO.length) : null;
+  // % agregadores: compute from absolute counts
+  const avgA = (() => {
+    const d7 = L7.filter(r=>(r.del||0)+(r.agr||0)+(r.tak||0)+(r.din||0)>0);
+    if (!d7.length) return null;
+    const tA = d7.reduce((s,r)=>s+(r.agr||0),0);
+    const tT = d7.reduce((s,r)=>s+(r.del||0)+(r.agr||0)+(r.tak||0)+(r.din||0),0);
+    return tT>0 ? Math.round(tA/tT*100) : null;
+  })();
+  // % pedidos online: onl stored as absolute, compute vs ped total
+  const avgO = (() => {
+    const d7 = L7.filter(r=>r.onl>0 && r.ped>0);
+    if (!d7.length) return null;
+    const tO = d7.reduce((s,r)=>s+r.onl,0);
+    const tP = d7.reduce((s,r)=>s+r.ped,0);
+    return tP>0 ? Math.round(tO/tP*100) : null;
+  })();
   const wDrv = L7.filter(r => r.drv > 0);
   const avgPpe = wDrv.length ? parseFloat((wDrv.reduce((s,r) => s + r.ped/r.drv, 0)/wDrv.length).toFixed(1)) : null;
   const wkE = L7.filter(r => { const d=dow(r.date); return d===5||d===6||d===0; });
@@ -834,7 +874,7 @@ function renderAddKPIs(L7) {
         <p class="kpi-sub" style="color:${avgA!==null&&avgA>30?'#A32D2D':'var(--text-secondary)'};">${avgA!==null?(avgA>30?'comissões elevadas':'dentro do normal'):'—'}</p>
       </div>
       <div class="kpi">
-        <p class="kpi-lbl">Ped. por entregador</p>
+        <p class="kpi-lbl">Ped. por hora entregador</p>
         <p class="kpi-val">${avgPpe !== null ? avgPpe : '—'}</p>
         <p class="kpi-sub" style="color:var(--text-secondary);">média diária</p>
       </div>
@@ -872,20 +912,25 @@ function renderInsights(L7, P7, avgE, totC, ped7, avgF) {
     const ratio = (best.fat / worst.fat).toFixed(1);
     if (ratio > 3) ins.push({t:'n', h:'Alta variabilidade semanal', s:`${dowN(best.date)} fatura ${ratio}x mais que ${dowN(worst.date)}. Oportunidade: promoções estratégicas nos dias fracos.`});
   }
-  const wO = L7.filter(r => r.onl > 0);
-  if (wO.length) {
-    const avgO = Math.round(wO.reduce((s,r) => s+r.onl, 0) / wO.length);
-    if (avgO < 50)      ins.push({t:'w', h:'Baixa digitalização dos pedidos', s:`Apenas ${avgO}% dos pedidos online. Aumentar presença na app e plataformas de entrega.`});
-    else if (avgO > 75) ins.push({t:'g', h:'Forte adoção digital',            s:`${avgO}% dos pedidos via canal online. Perfil favorável a campanhas segmentadas por app.`});
+  const onlPct7 = (() => {
+    const d7 = L7.filter(r=>r.onl>0 && r.ped>0);
+    if (!d7.length) return null;
+    return Math.round(d7.reduce((s,r)=>s+r.onl,0) / d7.reduce((s,r)=>s+r.ped,0) * 100);
+  })();
+  if (onlPct7 !== null) {
+    if (onlPct7 < 50)      ins.push({t:'w', h:'Baixa digitalização dos pedidos', s:`Apenas ${onlPct7}% dos pedidos online. Aumentar presença na app e plataformas de entrega.`});
+    else if (onlPct7 > 75) ins.push({t:'g', h:'Forte adoção digital',            s:`${onlPct7}% dos pedidos via canal online. Perfil favorável a campanhas segmentadas por app.`});
   }
-  const wA = L7.filter(r => r.agr > 0);
-  if (wA.length) {
-    const avgA = Math.round(wA.reduce((s,r) => s+r.agr, 0) / wA.length);
-    const wDel = L7.filter(r => r.del > 0);
-    const avgDel = wDel.length ? Math.round(wDel.reduce((s,r) => s+r.del, 0) / wDel.length) : 0;
+  const canalDays = L7.filter(r=>(r.del||0)+(r.agr||0)+(r.tak||0)+(r.din||0)>0);
+  if (canalDays.length) {
+    const tAll = canalDays.reduce((s,r)=>s+(r.del||0)+(r.agr||0)+(r.tak||0)+(r.din||0),0);
+    const tAgr = canalDays.reduce((s,r)=>s+(r.agr||0),0);
+    const tDel = canalDays.reduce((s,r)=>s+(r.del||0),0);
+    const avgA   = tAll>0 ? Math.round(tAgr/tAll*100) : 0;
+    const avgDel = tAll>0 ? Math.round(tDel/tAll*100) : 0;
     if (avgA > 30)       ins.push({t:'w', h:'Peso elevado de agregadores',    s:`${avgA}% via agregadores vs ${avgDel}% delivery próprio. Comissões elevadas a impactar margem. Rever estratégia de canal.`});
     else if (avgA > 20)  ins.push({t:'w', h:'Agregadores a monitorizar',      s:`${avgA}% via agregadores. Equilibrar captação de novos clientes com custo de comissão.`});
-    else                 ins.push({t:'g', h:'Boa proporção delivery próprio', s:`${avgDel}% delivery próprio vs ${avgA}% agregadores. Canal próprio com maior margem dominante.`});
+    else if (avgDel > 0) ins.push({t:'g', h:'Boa proporção delivery próprio', s:`${avgDel}% delivery próprio vs ${avgA}% agregadores. Canal próprio com maior margem dominante.`});
   }
   if (!ins.length) ins.push({t:'n', h:'Sem alertas ativos', s:'Todos os indicadores dentro dos parâmetros normais.'});
   document.getElementById('insights').innerHTML = ins.map(i => `
@@ -901,7 +946,7 @@ function renderHist() {
   document.getElementById('hist-body').innerHTML = sorted.length
     ? sorted.map(r => {
         const tick = r.ped > 0 ? (r.fat / r.ped).toFixed(1) : '—';
-        const ppe  = r.drv && r.ped ? Math.round(r.ped / r.drv) : '—';
+        const ppe  = r.drv && r.ped ? (r.ped / r.drv).toFixed(1) : '—';
         const entB = r.ent ? `<span class="b ${r.ent>35?'b-dn':r.ent>30?'b-w':'b-ok'}">${r.ent}m</span>` : '—';
         const canB = r.can > 3 ? `<span class="b b-w">${r.can}</span>` : (r.can || 0);
         return `<tr>
@@ -920,9 +965,12 @@ function renderHist() {
           <td>${r.din   ? `${r.din}%`   : '—'}</td>
           <td>${r.onl   ? `${r.onl}%`   : '—'}</td>
           <td>${r.fc    ? `${r.fc}%`    : '—'}</td>
-          <td style="color:var(--text-secondary);">${r.pico  || '—'}</td>
+          <td style="color:var(--text-secondary);font-size:10px;">${formatPico(r.pico)}</td>
           <td style="color:var(--text-secondary);font-size:11px;">${r.notas || ''}</td>
-          <td><button class="btn-sm btn-danger" onclick="delDay('${r.date}')">del</button></td>
+          <td style="white-space:nowrap;">
+            <button class="btn-sm" onclick="editDay('${r.date}')">editar</button>
+            <button class="btn-sm btn-danger" onclick="delDay('${r.date}')">del</button>
+          </td>
         </tr>`;
       }).join('')
     : '<tr><td colspan="18" style="text-align:center;color:var(--text-secondary);padding:28px;">Sem dados registados.</td></tr>';
@@ -946,7 +994,7 @@ async function submitDay() {
     del:   fo('f-del'),  agr:   fo('f-agr'),  tak:   fo('f-tak'),  din:   fo('f-din'),
     ent:   fv('f-ent'),
     can:   fi('f-can'),  onl:   fo('f-onl'),
-    fc:    fo('f-fc'),   drv:   parseInt(document.getElementById('f-drv').value) || null,
+    fc:    fo('f-fc'),   drv:   parseFloat(document.getElementById('f-drv').value) || null,
     pico:  ft('f-pico'), notas: ft('f-notas')
   };
   const msg = document.getElementById('form-msg');
@@ -965,10 +1013,96 @@ async function submitDay() {
   }
 }
 
+function calcAdt() {
+  const fat = parseFloat(document.getElementById('f-fat').value);
+  const ped = parseInt(document.getElementById('f-ped').value);
+  document.getElementById('f-adt').value = (fat > 0 && ped > 0) ? `€${(fat/ped).toFixed(2)}` : '';
+}
+
+/* ── Peak hours slot selector ── */
+const PICO_SLOTS = [
+  '10h00','10h30','11h00','11h30','12h00','12h30',
+  '13h00','13h30','14h00','14h30','15h00','15h30',
+  '16h00','16h30','17h00','17h30','18h00','18h30',
+  '19h00','19h30','20h00','20h30','21h00','21h30',
+  '22h00','22h30','23h00','23h30','00h00'
+];
+
+function initPicoSlots() {
+  const wrap = document.getElementById('pico-slots');
+  if (!wrap) return;
+  wrap.innerHTML = PICO_SLOTS.map(s =>
+    `<span class="pico-slot" data-slot="${s}" onclick="togglePico(this)">${s}</span>`
+  ).join('');
+}
+
+function togglePico(el) {
+  el.classList.toggle('active');
+  updatePicoValue();
+}
+
+function updatePicoValue() {
+  const active = [...document.querySelectorAll('.pico-slot.active')].map(el => el.dataset.slot);
+  document.getElementById('f-pico').value = active.join(',');
+}
+
+function setPicoSlots(val) {
+  // clear all
+  document.querySelectorAll('.pico-slot').forEach(el => el.classList.remove('active'));
+  if (!val) return;
+  // support old format "20h-23h" or new comma format "20h00,20h30,21h00..."
+  if (val.includes(',')) {
+    val.split(',').forEach(s => {
+      const el = document.querySelector(`.pico-slot[data-slot="${s.trim()}"]`);
+      if (el) el.classList.add('active');
+    });
+  } else {
+    // legacy: try to map range like "20h-23h" to slots
+    const m = val.match(/(\d+)h.*?(\d+)h/);
+    if (m) {
+      const start = parseInt(m[1]), end = parseInt(m[2]);
+      PICO_SLOTS.forEach(s => {
+        const h = parseInt(s);
+        if (h >= start && h < end) {
+          const el = document.querySelector(`.pico-slot[data-slot="${s}"]`);
+          if (el) el.classList.add('active');
+        }
+      });
+      updatePicoValue();
+    }
+  }
+}
+
 function clearForm() {
-  ['f-del','f-agr','f-tak','f-din','f-ent','f-can','f-onl','f-fc','f-drv','f-fat','f-ped','f-pico','f-notas'].forEach(id => document.getElementById(id).value = '');
-  document.getElementById('f-date').value  = todayStr();
+  ['f-del','f-agr','f-tak','f-din','f-ent','f-can','f-onl','f-fc','f-drv','f-fat','f-ped','f-notas'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-date').value = todayStr();
+  document.getElementById('f-adt').value  = '';
+  document.getElementById('f-pico').value = '';
+  document.querySelectorAll('.pico-slot').forEach(el => el.classList.remove('active'));
   document.getElementById('form-msg').textContent = '';
+}
+
+function editDay(date) {
+  const r = allDays.find(d => d.date === date);
+  if (!r) return;
+  clearForm();
+  document.getElementById('f-date').value  = r.date;
+  document.getElementById('f-fat').value   = r.fat || '';
+  document.getElementById('f-ped').value   = r.ped || '';
+  document.getElementById('f-del').value   = r.del || '';
+  document.getElementById('f-agr').value   = r.agr || '';
+  document.getElementById('f-tak').value   = r.tak || '';
+  document.getElementById('f-din').value   = r.din || '';
+  document.getElementById('f-ent').value   = r.ent || '';
+  document.getElementById('f-can').value   = r.can || '';
+  document.getElementById('f-onl').value   = r.onl || '';
+  document.getElementById('f-fc').value    = r.fc  || '';
+  document.getElementById('f-drv').value   = r.drv || '';
+  document.getElementById('f-notas').value = r.notas || '';
+  calcAdt();
+  setPicoSlots(r.pico || '');
+  showTab('reg');
+  window.scrollTo(0,0);
 }
 
 
@@ -1147,6 +1281,14 @@ function renderSemanal() {
       ['Cancelamentos', curW.can, prevW.can, prevW.can, curW.can], // inverted: fewer is better
     ];
     if (curW.avgEnt&&prevW.avgEnt) rows.push(['Entrega média',`${curW.avgEnt}m`,`${prevW.avgEnt}m`, prevW.avgEnt, curW.avgEnt]);
+    // ped/h: sum ped / sum drv hours for each week
+    const wPphC = allDays.filter(r=>weekKey(r.date)===curW.key&&r.drv>0);
+    const wPphP = allDays.filter(r=>weekKey(r.date)===prevW.key&&r.drv>0);
+    if (wPphC.length&&wPphP.length) {
+      const pphC = (wPphC.reduce((s,r)=>s+r.ped,0)/wPphC.reduce((s,r)=>s+r.drv,0)).toFixed(1);
+      const pphP = (wPphP.reduce((s,r)=>s+r.ped,0)/wPphP.reduce((s,r)=>s+r.drv,0)).toFixed(1);
+      rows.push(['Ped./h entregador', pphC, pphP, parseFloat(pphC), parseFloat(pphP)]);
+    }
     document.getElementById('s-comp').innerHTML = `
       <p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;">${fmtWeekRange(curW.key)} vs ${fmtWeekRange(prevW.key)}</p>
       <table style="width:100%;font-size:12px;border-collapse:collapse;">
@@ -1170,23 +1312,25 @@ function renderSemanal() {
     document.getElementById('s-comp').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);padding:12px 0;">Sem semana anterior para comparar.</p>';
   }
 
-  // canal donut (current week)
-  const cVals = [curW.avgDel||45, curW.avgAgr||20, curW.avgTak||25, curW.avgDin||10];
+  // canal donut (current week) — stored as nº pedidos, convert to %
   const cLbls = ['Delivery próprio','Agregadores','Carry Out','Dine In'];
   const cClrs = ['#185FA5','#378ADD','#1D9E75','#BA7517'];
+  const cAbs  = [curW.avgDel||0, curW.avgAgr||0, curW.avgTak||0, curW.avgDin||0];
+  const cTot  = cAbs.reduce((s,v)=>s+v,0) || 1;
+  const cVals = cAbs.map(v => Math.round(v/cTot*1000)/10);
   if (chartSemC) chartSemC.destroy();
   chartSemC = new Chart(document.getElementById('cSemCanal'), {
     type:'doughnut',
     data:{ labels:cLbls, datasets:[{ data:cVals, backgroundColor:cClrs, borderWidth:0, hoverOffset:4 }] },
     options:{ responsive:true, maintainAspectRatio:false, cutout:'65%',
-      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}%`}} } }
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw}% (${cAbs[ctx.dataIndex]} ped.)`}} } }
   });
   document.getElementById('s-cLeg').innerHTML = cLbls.map((l,i)=>`
     <div class="cl-row">
       <span style="display:flex;align-items:center;gap:6px;color:var(--text-secondary);font-size:12px;">
         <span class="cl-dot" style="background:${cClrs[i]};"></span>${l}
       </span>
-      <span style="font-weight:500;font-size:12px;color:var(--text-primary);">${cVals[i]}%</span>
+      <span style="font-weight:500;font-size:12px;color:var(--text-primary);">${cVals[i]}% <span style="font-weight:400;color:var(--text-secondary);">(${cAbs[i]} ped.)</span></span>
     </div>`).join('');
 
   // mini bars per day
@@ -1517,12 +1661,35 @@ function pctDiffInline(v,p) {
   return `<span style="color:${c};font-weight:500;">${d>0?'+':''}${d}%</span>`;
 }
 
+// Format pico: compact the selected slots into readable ranges
+function formatPico(val) {
+  if (!val) return '—';
+  if (!val.includes(',')) return val; // legacy text
+  const slots = val.split(',').filter(Boolean);
+  if (!slots.length) return '—';
+  // Group consecutive slots into ranges
+  const ranges = [];
+  let start = slots[0], prev = slots[0];
+  for (let i = 1; i < slots.length; i++) {
+    const prevIdx = PICO_SLOTS.indexOf(prev);
+    const curIdx  = PICO_SLOTS.indexOf(slots[i]);
+    if (curIdx === prevIdx + 1) {
+      prev = slots[i];
+    } else {
+      ranges.push(start === prev ? start : `${start}–${prev}`);
+      start = slots[i]; prev = slots[i];
+    }
+  }
+  ranges.push(start === prev ? start : `${start}–${prev}`);
+  return ranges.join(', ');
+}
+
 /* ── CSV export ── */
 function exportCSV() {
-  const hdr = 'Data,Dia,Faturação,Pedidos,Ticket,Entregadores,Ped/Entregador,Entrega(min),Cancelamentos,Delivery%,Agr%,CarryOut%,DineIn%,Online%,FoodCost%,Pico,Notas';
+  const hdr = 'Data,Dia,Faturação,Pedidos,Ticket,H.Entregadores,Ped/h,Entrega(min),Cancelamentos,Delivery,Agr,CarryOut,DineIn,Online,FoodCost%,Pico,Notas';
   const rows = [...allDays].sort((a,b) => b.date.localeCompare(a.date)).map(r => {
     const tick = r.ped > 0 ? (r.fat / r.ped).toFixed(1) : '';
-    const ppe  = r.drv && r.ped ? Math.round(r.ped / r.drv) : '';
+    const ppe  = r.drv && r.ped ? (r.ped / r.drv).toFixed(1) : '';
     return [r.date, dowN(r.date), r.fat, r.ped, tick, r.drv||'', ppe,
             r.ent||'', r.can||0, r.del||'', r.agr||'', r.tak||'', r.din||'',
             r.onl||'', r.fc||'',
@@ -1558,6 +1725,7 @@ async function init() {
     document.getElementById('themeBtn').textContent = savedTheme === 'dark' ? 'Modo claro' : 'Modo escuro';
   }
   document.getElementById('f-date').value = todayStr();
+  initPicoSlots();
   showLoading('A sincronizar dados...');
   try {
     allDays = await load();
