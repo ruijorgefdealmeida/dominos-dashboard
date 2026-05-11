@@ -15,6 +15,22 @@
   };
   document.head.appendChild(s);
 })();
+// Load PDF.js for automatic PDF data extraction
+(function() {
+  var s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+  s.onload = function() {
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  };
+  s.onerror = function() {
+    window.__pdfJsFailed = true;
+    console.warn('PDF.js failed to load — PDF import will not work.');
+  };
+  document.head.appendChild(s);
+})();
 </script>
 <style>
   :root {
@@ -245,6 +261,24 @@
   .pico-slot:hover { border-color:var(--border-mid); color:var(--text-primary); }
   .pico-slot.active { background:#185FA5; color:#fff; border-color:#185FA5; }
 
+  /* PDF drop zone */
+  .pdf-drop {
+    border: 2px dashed var(--border-mid); border-radius: var(--radius-lg);
+    padding: 18px 20px; text-align: center; cursor: pointer;
+    transition: all .15s; background: var(--bg-secondary);
+    margin-bottom: 14px;
+  }
+  .pdf-drop:hover, .pdf-drop.drag-over {
+    border-color: #378ADD; background: var(--bg-info); color: var(--text-info);
+  }
+  .pdf-drop .pdf-title { font-size: 13px; font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+  .pdf-drop .pdf-sub   { font-size: 11px; color: var(--text-secondary); }
+  .pdf-drop input { display: none; }
+  .pdf-status { font-size: 12px; margin-top: 8px; min-height: 16px; }
+  .pdf-status.ok   { color: #3B6D11; }
+  .pdf-status.err  { color: #A32D2D; }
+  .pdf-status.load { color: #BA7517; }
+
   /* spacing */
   .mb-14 { margin-bottom: 14px; }
   .mb-10 { margin-bottom: 10px; }
@@ -304,6 +338,9 @@
     <div class="kpi"><p class="kpi-lbl">% Agregadores</p><p class="kpi-val" id="k-agr">—</p><p class="kpi-sub" id="k-agr-s"></p></div>
     <div class="kpi"><p class="kpi-lbl">Food cost</p><p class="kpi-val" id="k-fc">—</p><p class="kpi-sub" id="k-fc-s"></p></div>
   </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi" style="border-left:3px solid #3B6D11;"><p class="kpi-lbl">Margem bruta média</p><p class="kpi-val" id="k-mb">—</p><p class="kpi-sub" id="k-mb-s"></p></div>
+  </div>
 
   <div class="g2">
     <div class="card">
@@ -347,6 +384,13 @@
   <div class="card">
     <p class="ct">Registar dados do dia</p>
     <p class="card-sub">Data, faturação e pedidos são obrigatórios. Os restantes campos são opcionais mas enriquecem os alertas automáticos.</p>
+
+    <label class="pdf-drop" id="pdf-drop">
+      <p class="pdf-title">📄 Importar PDF automaticamente</p>
+      <p class="pdf-sub">Arrasta para aqui o <strong>Resumo diário</strong> e/ou o <strong>Relatório meia hora</strong> — os campos são preenchidos automaticamente.</p>
+      <input type="file" id="pdf-input" accept="application/pdf" multiple>
+    </label>
+    <p class="pdf-status" id="pdf-status"></p>
     <div class="form-grid">
       <div class="ff"><label>Data *</label><input type="date" id="f-date"></div>
       <div class="ff"><label>Faturação (€) *</label><input type="number" id="f-fat" placeholder="ex: 1036.76" min="0" step="0.01" oninput="calcAdt()"></div>
@@ -415,6 +459,9 @@
     <div class="kpi"><p class="kpi-lbl">Food cost</p><p class="kpi-val" id="s-fc">—</p><p class="kpi-sub" id="s-fc-s"></p></div>
     <div class="kpi"><p class="kpi-lbl">Fat./dia média</p><p class="kpi-val" id="s-fpd">—</p><p class="kpi-sub" id="s-fpd-s"></p></div>
   </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi" style="border-left:3px solid #3B6D11;"><p class="kpi-lbl">Margem bruta média</p><p class="kpi-val" id="s-mb">—</p><p class="kpi-sub" id="s-mb-s"></p></div>
+  </div>
 
   <div class="g2 mb-14">
     <div class="card">
@@ -473,6 +520,9 @@
     <div class="kpi"><p class="kpi-lbl">Pedidos/dia</p><p class="kpi-val" id="m-ppd">—</p><p class="kpi-sub" id="m-ppd-s"></p></div>
     <div class="kpi"><p class="kpi-lbl">Food cost médio</p><p class="kpi-val" id="m-fc">—</p><p class="kpi-sub" id="m-fc-s"></p></div>
   </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi" style="border-left:3px solid #3B6D11;"><p class="kpi-lbl">Margem bruta média</p><p class="kpi-val" id="m-mb">—</p><p class="kpi-sub" id="m-mb-s"></p></div>
+  </div>
 
   <div class="card mb-14" id="m-proj-card">
     <p class="ct">Projeção de faturação — fim do mês</p>
@@ -520,6 +570,9 @@
     <div class="kpi"><p class="kpi-lbl">Faturação média/mês</p><p class="kpi-val" id="a-fmes">—</p><p class="kpi-sub" id="a-fmes-s"></p></div>
     <div class="kpi"><p class="kpi-lbl">Fat./dia média</p><p class="kpi-val" id="a-fpd">—</p><p class="kpi-sub" id="a-fpd-s"></p></div>
     <div class="kpi"><p class="kpi-lbl">Food cost médio</p><p class="kpi-val" id="a-fc">—</p><p class="kpi-sub" id="a-fc-s"></p></div>
+  </div>
+  <div class="kpi-g mb-14">
+    <div class="kpi" style="border-left:3px solid #3B6D11;"><p class="kpi-lbl">Margem bruta média</p><p class="kpi-val" id="a-mb">—</p><p class="kpi-sub" id="a-mb-s"></p></div>
   </div>
 
   <div class="g2 mb-14">
@@ -756,6 +809,16 @@ function renderDash() {
   const avgF  = wF.length ? Math.round(wF.reduce((s,r) => s + r.fc, 0) / wF.length) : null;
   document.getElementById('k-fc').textContent  = avgF ? `${avgF}%` : '—';
   if (avgF) document.getElementById('k-fc-s').innerHTML = colorSpan(avgF, 29, 32, 'dentro do alvo (<30%)', 'atenção', 'acima do alvo');
+
+  // Margem bruta = 100 - food cost
+  const margem = avgF !== null ? (100 - avgF).toFixed(1) : null;
+  document.getElementById('k-mb').textContent = margem !== null ? `${margem}%` : '—';
+  if (margem !== null) {
+    const mv = parseFloat(margem);
+    const mc = mv >= 70 ? '#3B6D11' : mv >= 65 ? '#BA7517' : '#A32D2D';
+    const ml = mv >= 70 ? 'dentro do alvo (≥70%)' : mv >= 65 ? 'aceitável' : 'abaixo do alvo';
+    document.getElementById('k-mb-s').innerHTML = `<span style="color:${mc};font-size:11px;">${ml}</span>`;
+  }
 
   // % agregadores: agr/total canal pedidos per day average
   const agrPct = (() => {
@@ -1050,6 +1113,234 @@ function calcAdt() {
   document.getElementById('f-adt').value = (fat > 0 && ped > 0) ? `€${(fat/ped).toFixed(2)}` : '';
 }
 
+/* ══════════════════════════════════════════
+   PDF IMPORT — Extracção automática
+   ══════════════════════════════════════════ */
+
+// Parse European number format: "€1.939,21" → 1939.21 | "25,78%" → 25.78
+function parseEuro(str) {
+  if (!str) return null;
+  const clean = str.replace(/[€%\s]/g,'').replace(/\./g,'').replace(',','.');
+  const n = parseFloat(clean);
+  return isNaN(n) ? null : n;
+}
+function parseInt2(str) { const n = parseInt(str); return isNaN(n) ? null : n; }
+
+// Convert "DD/MM/YYYY" → "YYYY-MM-DD"
+function parseDate(str) {
+  const m = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  return m ? `${m[3]}-${m[2]}-${m[1]}` : null;
+}
+
+// Extract all text from a PDF file using PDF.js
+async function extractPdfText(file) {
+  if (!window.pdfjsLib) throw new Error('PDF.js não carregou. Verifica a ligação à internet.');
+  const buffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: buffer }).promise;
+  let full = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    // Join with spaces and newlines for structure
+    let lastY = null, line = '';
+    const lines = [];
+    content.items.forEach(item => {
+      const y = item.transform[5];
+      if (lastY !== null && Math.abs(y - lastY) > 2) {
+        lines.push(line);
+        line = '';
+      }
+      line += item.str + ' ';
+      lastY = y;
+    });
+    if (line) lines.push(line);
+    full += lines.join('\n') + '\n';
+  }
+  return full;
+}
+
+// Identify which PDF type we're dealing with
+function detectPdfType(text) {
+  if (/Resumo\s+di[aá]rio/i.test(text)) return 'resumo';
+  if (/Relat[oó]rio\s+de\s+an[aá]lise\s+de\s+meia\s+hora/i.test(text)) return 'meiahora';
+  return 'unknown';
+}
+
+// Extract fields from "Resumo diário" PDF
+function parseResumo(text) {
+  const out = {};
+
+  // Data (first occurrence of DD/MM/YYYY after "Data de início")
+  const mDate = text.match(/Data\s+de\s+in[ií]cio\s*:?\s*(\d{2}\/\d{2}\/\d{4})/i);
+  if (mDate) out.date = parseDate(mDate[1]);
+
+  // Helper: extract first numeric value after a label (the "Hoje" column)
+  // Pattern: label followed by € or number, up to next whitespace/line
+  function findFirst(label, pattern) {
+    // Use pattern with the label embedded
+    const re = new RegExp(label + '\\s+' + pattern);
+    const m = text.match(re);
+    return m ? m[1] : null;
+  }
+
+  // Vendas líquidas €1.939,21 €8.034,06 €25.657,64 → want first
+  const mFat = text.match(/Vendas\s+l[ií]quidas\s+€([\d.,]+)/i);
+  if (mFat) out.fat = parseEuro(mFat[1]);
+
+  // Total de pedidos 107 100,00% 504 ...
+  const mPed = text.match(/Total\s+de\s+pedidos\s+(\d[\d.]*)/i);
+  if (mPed) out.ped = parseInt2(mPed[1].replace(/\./g,''));
+
+  // Pedidos de Delivery 41 38,32% ...
+  const mDel = text.match(/Pedidos\s+de\s+Delivery\s+(\d+)/i);
+  if (mDel) out.del = parseInt2(mDel[1]);
+
+  // Pedidos Pick Up 14 ... (Carry Out)
+  const mPickup = text.match(/Pedidos\s+Pick\s+Up\s+(\d+)/i);
+  if (mPickup) out.tak = parseInt2(mPickup[1]);
+
+  // Pedidos no restaurante 19 ... (Dine In)
+  const mDine = text.match(/Pedidos\s+no\s+restaurante\s+(\d+)/i);
+  if (mDine) out.din = parseInt2(mDine[1]);
+
+  // Est Average Delivery Time 18,31 18,31 ...
+  const mEnt = text.match(/Est\s+Average\s+Delivery\s+Time\s+([\d.,]+)/i);
+  if (mEnt) out.ent = parseEuro(mEnt[1]);
+
+  // % atual de comida 25,78% ...  → food cost
+  const mFc = text.match(/%\s*atual\s+de\s+comida\s+([\d.,]+)%/i);
+  if (mFc) out.fc = parseEuro(mFc[1]);
+
+  // Cancelamentos: "Pedidos anulados" is € value, not count; use "Maus pedidos" as count proxy
+  // Actually there's no pure cancellation count — leave unset, user enters manually
+
+  // Horas de entregadores: sum hours of team members who have delivery earnings > 0
+  // Pattern: "NAME HH:MM HH:MM HOURS €PAY PCT% €DELIVERY ..."
+  // Drivers = lines where "Quantidade ao domicílio" column (after pct) is > €0
+  const driverHours = extractDriverHours(text);
+  if (driverHours > 0) out.drv = driverHours;
+
+  // Detect peak hours from the "Resumo de vendas por período" — not granular enough here
+  // Pico is better extracted from the half-hour report
+
+  return out;
+}
+
+// Sum hours of team members who made deliveries
+function extractDriverHours(text) {
+  // Each line: "ID Name, Surname HH:MM HH:MM HOURS €PAY PCT% €DELIVERY ..."
+  // We match lines starting with 4-digit ID (e.g. 3013) followed by a name
+  // Then capture HOURS and the first € that comes after PCT%
+  const re = /\b\d{4}\s+[A-ZÁÉÍÓÚÂÊÔÃÕÇa-záéíóúâêôãõç,.\- ]+?\s+\d{1,2}:\d{2}\s+\d{1,2}:\d{2}\s+([\d,]+)\s+€[\d.,]+\s+[\d.,]+%\s+€([\d.,]+)/g;
+  let match, total = 0;
+  while ((match = re.exec(text)) !== null) {
+    const hours = parseEuro(match[1]);
+    const deliverySales = parseEuro(match[2]);
+    if (hours && deliverySales > 0) total += hours;
+  }
+  return Math.round(total * 10) / 10;
+}
+
+// Extract pico hours from "Relatório meia hora" PDF
+function parseMeiahora(text) {
+  const out = {};
+
+  // Date from header
+  const mDate = text.match(/Begin\s+Date:\s*(\d{2}\/\d{2}\/\d{4})/i);
+  if (mDate) out.date = parseDate(mDate[1]);
+
+  // Parse each row: "HH:MM €VALUE CLIENTES PIZZAS LEVAR DOM TARDES PCT% TOMADA SAIDA DOMICILIO"
+  const slotRe = /^(\d{1,2}):(\d{2})\s+€([\d.,]+)\s/gm;
+  const slots = [];
+  let m;
+  while ((m = slotRe.exec(text)) !== null) {
+    const hh = m[1].padStart(2,'0'), mm = m[2];
+    const sales = parseEuro(m[3]);
+    slots.push({ time: `${hh}h${mm}`, sales });
+  }
+
+  if (slots.length) {
+    // Peak slots: >= 50% of max
+    const maxSales = Math.max(...slots.map(s => s.sales));
+    const threshold = maxSales * 0.5;
+    const peaks = slots.filter(s => s.sales >= threshold).map(s => s.time);
+    if (peaks.length) out.pico = peaks.join(',');
+  }
+
+  return out;
+}
+
+// Combined processor — handles one or multiple PDFs
+async function processPdfs(files) {
+  const status = document.getElementById('pdf-status');
+  status.className = 'pdf-status load';
+  status.textContent = '⏳ A analisar PDF(s)...';
+
+  const allData = {};
+  const processed = [];
+
+  for (const file of files) {
+    try {
+      const text = await extractPdfText(file);
+      const type = detectPdfType(text);
+      let data = {};
+      if (type === 'resumo')      { data = parseResumo(text);    processed.push('Resumo diário'); }
+      else if (type === 'meiahora'){ data = parseMeiahora(text); processed.push('Relatório meia hora'); }
+      else                        { processed.push(`${file.name} (tipo não reconhecido)`); continue; }
+      Object.assign(allData, data);
+    } catch(e) {
+      console.error(e);
+      status.className = 'pdf-status err';
+      status.textContent = `✗ Erro a ler ${file.name}: ${e.message}`;
+      return;
+    }
+  }
+
+  // Fill form fields
+  const fill = (id, val) => {
+    if (val !== null && val !== undefined && val !== '') {
+      document.getElementById(id).value = val;
+    }
+  };
+  if (allData.date) fill('f-date', allData.date);
+  if (allData.fat !== undefined) fill('f-fat', allData.fat);
+  if (allData.ped !== undefined) fill('f-ped', allData.ped);
+  if (allData.del !== undefined) fill('f-del', allData.del);
+  if (allData.tak !== undefined) fill('f-tak', allData.tak);
+  if (allData.din !== undefined) fill('f-din', allData.din);
+  if (allData.ent !== undefined) fill('f-ent', allData.ent);
+  if (allData.fc  !== undefined) fill('f-fc',  allData.fc);
+  if (allData.drv !== undefined) fill('f-drv', allData.drv);
+  if (allData.pico) setPicoSlots(allData.pico);
+  calcAdt();
+
+  const filled = Object.keys(allData).length;
+  status.className = 'pdf-status ok';
+  status.innerHTML = `✓ ${processed.join(' + ')} · <strong>${filled} campo${filled>1?'s':''} extraído${filled>1?'s':''}</strong>. Revê e clica Guardar.`;
+}
+
+// Wire up drop zone
+function initPdfDrop() {
+  const zone  = document.getElementById('pdf-drop');
+  const input = document.getElementById('pdf-input');
+  if (!zone || !input) return;
+
+  input.addEventListener('change', e => {
+    if (e.target.files.length) processPdfs(e.target.files);
+  });
+
+  ['dragenter','dragover'].forEach(ev => {
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  });
+  ['dragleave','drop'].forEach(ev => {
+    zone.addEventListener(ev, e => { e.preventDefault(); zone.classList.remove('drag-over'); });
+  });
+  zone.addEventListener('drop', e => {
+    const files = [...e.dataTransfer.files].filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+    if (files.length) processPdfs(files);
+  });
+}
+
 /* ── Peak hours slot selector ── */
 const PICO_SLOTS = [
   '10h00','10h30','11h00','11h30','12h00','12h30',
@@ -1275,6 +1566,16 @@ function renderSemanal() {
   const wSF=allDays.filter(r=>weekKey(r.date)===curW.key&&r.fc>0); const avgSF=wSF.length?Math.round(wSF.reduce((s,r)=>s+r.fc,0)/wSF.length):null;
   document.getElementById('s-fc').textContent  = avgSF ? `${avgSF}%` : '—';
   if (avgSF) document.getElementById('s-fc-s').innerHTML = colorSpan(avgSF,29,32,'dentro do alvo','atenção','acima do alvo');
+
+  // Margem bruta semanal
+  const semMb = avgSF !== null ? (100 - avgSF).toFixed(1) : null;
+  document.getElementById('s-mb').textContent = semMb !== null ? `${semMb}%` : '—';
+  if (semMb !== null) {
+    const mv = parseFloat(semMb);
+    const mc = mv >= 70 ? '#3B6D11' : mv >= 65 ? '#BA7517' : '#A32D2D';
+    const ml = mv >= 70 ? 'dentro do alvo (≥70%)' : mv >= 65 ? 'aceitável' : 'abaixo do alvo';
+    document.getElementById('s-mb-s').innerHTML = `<span style="color:${mc};font-size:11px;">${ml}</span>`;
+  }
   const fpd = curW.n>0?Math.round(curW.fat/curW.n):null;
   document.getElementById('s-fpd').textContent  = fpd ? `€${fpd.toLocaleString('pt-PT')}` : '—';
   document.getElementById('s-fpd-s').innerHTML  = prevW&&prevW.n>0 ? pctDiff(fpd, Math.round(prevW.fat/prevW.n), 'vs sem. ant.') : '';
@@ -1509,6 +1810,23 @@ function renderMensal() {
   document.getElementById('m-fc').textContent   = curM.avgFc ? `${curM.avgFc}%` : '—';
   if (curM.avgFc) document.getElementById('m-fc-s').innerHTML = colorSpan(curM.avgFc,29,32,'dentro do alvo','atenção','acima do alvo');
 
+  // Margem bruta mensal
+  const mMb = curM.avgFc !== null ? (100 - curM.avgFc).toFixed(1) : null;
+  document.getElementById('m-mb').textContent = mMb !== null ? `${mMb}%` : '—';
+  if (mMb !== null) {
+    const mv = parseFloat(mMb);
+    const mc = mv >= 70 ? '#3B6D11' : mv >= 65 ? '#BA7517' : '#A32D2D';
+    const ml = mv >= 70 ? 'dentro do alvo (≥70%)' : mv >= 65 ? 'aceitável' : 'abaixo do alvo';
+    let trend = '';
+    if (prevM && prevM.avgFc !== null) {
+      const pMb = 100 - prevM.avgFc;
+      const d = (parseFloat(mMb) - pMb).toFixed(1);
+      const tc = d > 0 ? '#3B6D11' : d < 0 ? '#A32D2D' : '#5F5E5A';
+      trend = ` <span style="color:${tc};">${d>0?'+':''}${d}pp vs mês ant.</span>`;
+    }
+    document.getElementById('m-mb-s').innerHTML = `<span style="color:${mc};font-size:11px;">${ml}</span>${trend}`;
+  }
+
   // Projection
   renderProjection(curM, months, today);
 
@@ -1618,6 +1936,23 @@ function renderAnual() {
   document.getElementById('a-fpd-s').innerHTML = prevY&&prevY.n>0 ? pctDiff(aFpd, Math.round(prevY.fat/prevY.n), 'vs ano ant.') : '';
   document.getElementById('a-fc').textContent   = curY.avgFc ? `${curY.avgFc}%` : '—';
   if (curY.avgFc) document.getElementById('a-fc-s').innerHTML = colorSpan(curY.avgFc,29,32,'dentro do alvo','atenção','acima do alvo');
+
+  // Margem bruta anual
+  const aMb = curY.avgFc !== null ? (100 - curY.avgFc).toFixed(1) : null;
+  document.getElementById('a-mb').textContent = aMb !== null ? `${aMb}%` : '—';
+  if (aMb !== null) {
+    const mv = parseFloat(aMb);
+    const mc = mv >= 70 ? '#3B6D11' : mv >= 65 ? '#BA7517' : '#A32D2D';
+    const ml = mv >= 70 ? 'dentro do alvo (≥70%)' : mv >= 65 ? 'aceitável' : 'abaixo do alvo';
+    let trend = '';
+    if (prevY && prevY.avgFc !== null) {
+      const pMb = 100 - prevY.avgFc;
+      const d = (parseFloat(aMb) - pMb).toFixed(1);
+      const tc = d > 0 ? '#3B6D11' : d < 0 ? '#A32D2D' : '#5F5E5A';
+      trend = ` <span style="color:${tc};">${d>0?'+':''}${d}pp vs ano ant.</span>`;
+    }
+    document.getElementById('a-mb-s').innerHTML = `<span style="color:${mc};font-size:11px;">${ml}</span>${trend}`;
+  }
 
   // Chart — faturação mensal do ano atual + anterior (se existir)
   const allMonthKeys = Array.from({length:12},(_,i)=>`${curYk}-${String(i+1).padStart(2,'0')}`);
@@ -1757,6 +2092,7 @@ async function init() {
   }
   document.getElementById('f-date').value = todayStr();
   initPicoSlots();
+  initPdfDrop();
   showLoading('A sincronizar dados...');
   try {
     allDays = await load();
@@ -1775,4 +2111,3 @@ init();
 </script>
 </body>
 </html>
- 
