@@ -184,8 +184,9 @@
   .ins-n { background: var(--bg-secondary); color: var(--text-secondary); }
 
   /* form */
-  .form-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 1rem; }
-  .ff label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+  .form-grid { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 14px 16px; margin-bottom: 1rem; }
+  .ff label { display: block; font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-weight: 400; }
+  .ff label .hint-inline { font-size: 10px; color: var(--text-secondary); font-weight: 400; margin-left: 4px; opacity: 0.7; }
   .ff input {
     width: 100%; font-size: 13px; padding: 7px 10px;
     border: 0.5px solid var(--border-mid);
@@ -193,10 +194,20 @@
     background: var(--bg-primary);
     color: var(--text-primary);
     font-family: var(--font);
+    box-sizing: border-box;
   }
   .ff input:focus { outline: none; border-color: var(--border-info); box-shadow: 0 0 0 2px rgba(55,138,221,0.2); }
-  .ff input[readonly] { color: var(--text-secondary); }
+  .ff input[readonly] { color: var(--text-secondary); background: var(--bg-secondary); }
   .form-hint { font-size: 10px; color: var(--text-secondary); margin-top: 3px; }
+  .form-section-h {
+    grid-column: 1 / -1;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 14px 0 -2px;
+    padding-bottom: 2px;
+  }
+  .form-section-h:first-child { margin-top: 0; }
 
   /* table */
   .tbl-wrap { border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow-x: auto; margin-bottom: 12px; }
@@ -283,6 +294,12 @@
   .mb-14 { margin-bottom: 14px; }
   .mb-10 { margin-bottom: 10px; }
 
+  @media (max-width: 1100px) {
+    .form-grid { grid-template-columns: repeat(4,1fr); }
+  }
+  @media (max-width: 900px) {
+    .form-grid { grid-template-columns: repeat(3,1fr); }
+  }
   @media (max-width: 700px) {
     .kpi-g { grid-template-columns: repeat(2,1fr); }
     .g2 { grid-template-columns: 1fr; }
@@ -407,49 +424,50 @@
     </label>
     <p class="pdf-status" id="pdf-status"></p>
     <div class="form-grid">
+      <!-- ── 1. VISÃO GERAL — FINANCEIRO ── -->
+      <h3 class="form-section-h">Visão Geral (Financeiro)</h3>
       <div class="ff"><label>Data *</label><input type="date" id="f-date"></div>
-      <div class="ff"><label>Faturação (€) *</label><input type="number" id="f-fat" placeholder="ex: 1036.76" min="0" step="0.01" oninput="calcAdt()"></div>
-      <div class="ff"><label>Nº de pedidos *</label><input type="number" id="f-ped" placeholder="ex: 61" min="0" step="1" oninput="calcAdt()"></div>
-      <div class="ff"><label>ADT — Ticket médio (auto)</label><input type="text" id="f-adt" readonly placeholder="calculado automaticamente"><p class="form-hint">= Faturação ÷ Pedidos</p></div>
+      <div class="ff"><label>Faturação (€) *</label><input type="number" id="f-fat" placeholder="ex: 1939.21" min="0" step="0.01" oninput="calcAdt()"></div>
+      <div class="ff"><label>N.º de pedidos *</label><input type="number" id="f-ped" placeholder="ex: 107" min="0" step="1" oninput="calcAdt()"></div>
+      <div class="ff"><label>Ticket Médio (€)<span class="hint-inline">(auto)</span></label><input type="text" id="f-adt" readonly placeholder="—"></div>
+      <div class="ff"><label>N.º Delivery Total</label><input type="number" id="f-deltot" placeholder="ex: 49" min="0" step="1"></div>
+      <div class="ff"><label>TGTG (€)</label><input type="number" id="f-tgtg" placeholder="ex: 25.50" min="0" step="0.01"></div>
 
-      <div class="ff"><label>Delivery próprio (nº ped.)</label><input type="number" id="f-del" placeholder="ex: 27" min="0" step="1"></div>
-      <div class="ff"><label>Agregadores (nº ped.)</label><input type="number" id="f-agr" placeholder="ex: 8" min="0" step="1"></div>
-      <div class="ff"><label>Carry Out (nº ped.)</label><input type="number" id="f-tak" placeholder="ex: 20" min="0" step="1"></div>
-      <div class="ff"><label>Dine In (nº ped.)</label><input type="number" id="f-din" placeholder="ex: 6" min="0" step="1"></div>
+      <!-- ── 2. CANAIS DE VENDA — VOLUME ── -->
+      <h3 class="form-section-h">Canais de Venda (Volume)</h3>
+      <div class="ff"><label>Delivery próprio (n.º ped.)</label><input type="number" id="f-del" placeholder="ex: 41" min="0" step="1"></div>
+      <div class="ff"><label>Agregadores (n.º ped.)</label><input type="number" id="f-agr" placeholder="ex: 8" min="0" step="1"></div>
+      <div class="ff"><label>Carry Out (n.º ped.)</label><input type="number" id="f-tak" placeholder="ex: 14" min="0" step="1"></div>
+      <div class="ff"><label>Dine In (n.º ped.)</label><input type="number" id="f-din" placeholder="ex: 19" min="0" step="1"></div>
+      <div class="ff"><label>Pedidos Online (n.º ped.)</label><input type="number" id="f-onl" placeholder="ex: 44" min="0" step="1"></div>
 
-      <div class="ff"><label>Tempo entrega médio (min)</label><input type="number" id="f-ent" placeholder="ex: 28" min="0" step="0.1"></div>
-      <div class="ff"><label>Cancelamentos (nº)</label><input type="number" id="f-can" placeholder="ex: 3" min="0" step="1"></div>
-      <div class="ff"><label>Pedidos online (nº)</label><input type="number" id="f-onl" placeholder="ex: 44" min="0" step="1"></div>
-      <div class="ff"><label>Food cost (%)</label><input type="number" id="f-fc" placeholder="ex: 28" min="0" max="100" step="0.1"></div>
-
-      <div class="ff"><label>Horas entregadores (h totais)</label><input type="number" id="f-drv" placeholder="ex: 15" min="0" step="0.5"><p class="form-hint">ex: 3 entregadores × 5h = 15h</p></div>
-      <div class="ff" style="grid-column:span 3;">
-        <label>Pico horário <span style="font-weight:400;color:var(--text-secondary);">(selecciona os intervalos de maior volume)</span></label>
+      <!-- ── 3. OPERACIONAL: EFICIÊNCIA E TEMPO ── -->
+      <h3 class="form-section-h">Operacional: Eficiência e Tempo</h3>
+      <div class="ff"><label>ADT (m)</label><input type="number" id="f-adtm" placeholder="ex: 18.3" min="0" step="0.1"></div>
+      <div class="ff"><label>Load (m)</label><input type="number" id="f-load" placeholder="ex: 3.5" min="0" step="0.1"></div>
+      <div class="ff"><label>Wait (m)</label><input type="number" id="f-wait" placeholder="ex: 2.8" min="0" step="0.1"></div>
+      <div class="ff"><label>Singles (%)</label><input type="number" id="f-sing" placeholder="ex: 92" min="0" max="100" step="0.1"></div>
+      <div class="ff" style="grid-column:span 5;">
+        <label>Pico de vendas<span class="hint-inline">(seleccionar intervalos)</span></label>
         <div class="pico-wrap" id="pico-slots"></div>
         <input type="hidden" id="f-pico">
       </div>
 
-      <div class="ff" style="grid-column:span 4;">
-        <p style="font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin:6px 0 0;border-top:0.5px solid var(--border-light);padding-top:10px;">Campos adicionais — registo manual</p>
-      </div>
-
-      <div class="ff"><label>Nº Delivery Total</label><input type="number" id="f-deltot" placeholder="ex: 49" min="0" step="1"><p class="form-hint">total combinado Delivery + Agregadores</p></div>
-      <div class="ff"><label>TGTG (€)</label><input type="number" id="f-tgtg" placeholder="ex: 25.50" min="0" step="0.01"><p class="form-hint">vendas Too Good To Go</p></div>
-      <div class="ff"><label>Load (m)</label><input type="number" id="f-load" placeholder="ex: 3.5" min="0" step="0.1"></div>
-      <div class="ff"><label>Wait (m)</label><input type="number" id="f-wait" placeholder="ex: 2.8" min="0" step="0.1"></div>
-
-      <div class="ff"><label>ADT (m)</label><input type="number" id="f-adtm" placeholder="ex: 18.3" min="0" step="0.1"><p class="form-hint">tempo de entrega Domino's</p></div>
-      <div class="ff"><label>Singles (%)</label><input type="number" id="f-sing" placeholder="ex: 92" min="0" max="100" step="0.1"></div>
-      <div class="ff"><label>Food Cost Ideal (%)</label><input type="number" id="f-fci" placeholder="ex: 25" min="0" max="100" step="0.1"></div>
+      <!-- ── 4. GESTÃO: CUSTOS E DESEMPENHO ── -->
+      <h3 class="form-section-h">Gestão: Custos e Desempenho</h3>
+      <div class="ff"><label>Food Cost Actual (%)</label><input type="number" id="f-fc" placeholder="ex: 25.78" min="0" max="100" step="0.1"></div>
+      <div class="ff"><label>Food Cost Ideal (%)</label><input type="number" id="f-fci" placeholder="ex: 33.31" min="0" max="100" step="0.1"></div>
       <div class="ff"><label>€ Cancelamentos</label><input type="number" id="f-cane" placeholder="ex: 57.04" min="0" step="0.01"></div>
-
-      <div class="ff"><label>Nº de Bads</label><input type="number" id="f-bads" placeholder="ex: 1" min="0" step="1"><p class="form-hint">pedidos com erro/retorno</p></div>
-      <div class="ff"><label>Nº de Voids</label><input type="number" id="f-voids" placeholder="ex: 0" min="0" step="1"><p class="form-hint">pedidos anulados</p></div>
+      <div class="ff"><label>N.º Cancelamentos</label><input type="number" id="f-can" placeholder="ex: 3" min="0" step="1"></div>
+      <div class="ff"><label>N.º de Bads</label><input type="number" id="f-bads" placeholder="ex: 1" min="0" step="1"></div>
+      <div class="ff"><label>N.º de Voids</label><input type="number" id="f-voids" placeholder="ex: 0" min="0" step="1"></div>
+      <div class="ff"><label>Horas Drivers (h)</label><input type="number" id="f-drv" placeholder="ex: 25.4" min="0" step="0.5"></div>
       <div class="ff"><label>Horas Insiders (h)</label><input type="number" id="f-insh" placeholder="ex: 12" min="0" step="0.5"></div>
       <div class="ff"><label>Horas Gerentes (h)</label><input type="number" id="f-mgrh" placeholder="ex: 8" min="0" step="0.5"></div>
-      <div class="ff"><label>Faturação hora almoço (€)</label><input type="number" id="f-lunch" placeholder="ex: 320.50" min="0" step="0.01"><p class="form-hint">apenas para análise estatística</p></div>
-      <div class="ff"></div>
 
+      <!-- ── 5. OUTROS ── -->
+      <h3 class="form-section-h">Outros</h3>
+      <div class="ff"><label>Faturação hora almoço (€)<span class="hint-inline">(estatística)</span></label><input type="number" id="f-lunch" placeholder="ex: 320.50" min="0" step="0.01"></div>
       <div class="ff" style="grid-column:span 4;"><label>Notas</label><input type="text" id="f-notas" placeholder="observações livres" maxlength="180"></div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -1197,7 +1215,7 @@ async function submitDay() {
   const rec = {
     date, fat, ped,
     del:   fo('f-del'),  agr:   fo('f-agr'),  tak:   fo('f-tak'),  din:   fo('f-din'),
-    ent:   fv('f-ent'),
+    ent:   fv('f-adtm'),  // tempo de entrega (campo unificado com ADT)
     can:   fi('f-can'),  onl:   fo('f-onl'),
     fc:    fo('f-fc'),   drv:   parseFloat(document.getElementById('f-drv').value) || null,
     pico:  ft('f-pico'), notas: ft('f-notas'),
@@ -1206,7 +1224,6 @@ async function submitDay() {
     tgtg:   fv('f-tgtg'),
     loadm:  fv('f-load'),
     wait:   fv('f-wait'),
-    adtm:   fv('f-adtm'),
     sing:   fv('f-sing'),
     fci:    fv('f-fci'),
     cane:   fv('f-cane'),
@@ -1433,7 +1450,7 @@ async function processPdfs(files) {
   if (allData.del !== undefined) fill('f-del', allData.del);
   if (allData.tak !== undefined) fill('f-tak', allData.tak);
   if (allData.din !== undefined) fill('f-din', allData.din);
-  if (allData.ent !== undefined) fill('f-ent', allData.ent);
+  if (allData.ent !== undefined) fill('f-adtm', allData.ent);
   if (allData.fc  !== undefined) fill('f-fc',  allData.fc);
   if (allData.drv !== undefined) fill('f-drv', allData.drv);
   if (allData.pico) setPicoSlots(allData.pico);
@@ -1521,8 +1538,8 @@ function setPicoSlots(val) {
 }
 
 function clearForm() {
-  ['f-del','f-agr','f-tak','f-din','f-ent','f-can','f-onl','f-fc','f-drv','f-fat','f-ped','f-notas',
-   'f-deltot','f-tgtg','f-load','f-wait','f-adtm','f-sing','f-fci','f-cane','f-bads','f-voids','f-insh','f-mgrh','f-lunch'
+  ['f-del','f-agr','f-tak','f-din','f-adtm','f-can','f-onl','f-fc','f-drv','f-fat','f-ped','f-notas',
+   'f-deltot','f-tgtg','f-load','f-wait','f-sing','f-fci','f-cane','f-bads','f-voids','f-insh','f-mgrh','f-lunch'
   ].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-date').value = todayStr();
   document.getElementById('f-adt').value  = '';
@@ -1542,7 +1559,7 @@ function editDay(date) {
   document.getElementById('f-agr').value   = r.agr || '';
   document.getElementById('f-tak').value   = r.tak || '';
   document.getElementById('f-din').value   = r.din || '';
-  document.getElementById('f-ent').value   = r.ent || '';
+  document.getElementById('f-adtm').value  = r.ent || r.adtm || '';
   document.getElementById('f-can').value   = r.can || '';
   document.getElementById('f-onl').value   = r.onl || '';
   document.getElementById('f-fc').value    = r.fc  || '';
@@ -1553,7 +1570,6 @@ function editDay(date) {
   document.getElementById('f-tgtg').value   = r.tgtg   || '';
   document.getElementById('f-load').value   = r.loadm  || '';
   document.getElementById('f-wait').value   = r.wait   || '';
-  document.getElementById('f-adtm').value   = r.adtm   || '';
   document.getElementById('f-sing').value   = r.sing   || '';
   document.getElementById('f-fci').value    = r.fci    || '';
   document.getElementById('f-cane').value   = r.cane   || '';
