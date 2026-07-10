@@ -350,10 +350,16 @@
     <div class="kpi"><p class="kpi-lbl">Melhor dia (semana)</p><p class="kpi-val" id="k-best">—</p><p class="kpi-sub" id="k-best-s" class="c-sec"></p></div>
   </div>
   <div class="kpi-g mb-14">
-    <div class="kpi"><p class="kpi-lbl">Entrega média</p><p class="kpi-val" id="k-ent">—</p><p class="kpi-sub" id="k-ent-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Entrega média (ADT)</p><p class="kpi-val" id="k-ent">—</p><p class="kpi-sub" id="k-ent-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Load médio</p><p class="kpi-val" id="k-load">—</p><p class="kpi-sub" id="k-load-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Wait médio</p><p class="kpi-val" id="k-wait">—</p><p class="kpi-sub" id="k-wait-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">% Extremes</p><p class="kpi-val" id="k-extr">—</p><p class="kpi-sub" id="k-extr-s"></p></div>
+  </div>
+  <div class="kpi-g mb-14">
     <div class="kpi"><p class="kpi-lbl">Cancelamentos</p><p class="kpi-val" id="k-can">—</p><p class="kpi-sub" id="k-can-s"></p></div>
     <div class="kpi"><p class="kpi-lbl">% Agregadores</p><p class="kpi-val" id="k-agr">—</p><p class="kpi-sub" id="k-agr-s"></p></div>
-    <div class="kpi"><p class="kpi-lbl">Food cost</p><p class="kpi-val" id="k-fc">—</p><p class="kpi-sub" id="k-fc-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Food cost Actual</p><p class="kpi-val" id="k-fc">—</p><p class="kpi-sub" id="k-fc-s"></p></div>
+    <div class="kpi"><p class="kpi-lbl">Food cost Ideal</p><p class="kpi-val" id="k-fci">—</p><p class="kpi-sub" id="k-fci-s"></p></div>
   </div>
   <div class="kpi-g mb-14">
     <div class="kpi" style="border-left:3px solid #3B6D11;"><p class="kpi-lbl">Margem bruta média</p><p class="kpi-val" id="k-mb">—</p><p class="kpi-sub" id="k-mb-s"></p></div>
@@ -457,10 +463,11 @@
       <h3 class="form-section-h">Gestão: Custos e Desempenho</h3>
       <div class="ff"><label>Food Cost Actual (%)</label><input type="number" id="f-fc" placeholder="ex: 25.78" min="0" max="100" step="0.1"></div>
       <div class="ff"><label>Food Cost Ideal (%)</label><input type="number" id="f-fci" placeholder="ex: 33.31" min="0" max="100" step="0.1"></div>
-      <div class="ff"><label>€ Cancelamentos</label><input type="number" id="f-cane" placeholder="ex: 57.04" min="0" step="0.01"></div>
+      <div class="ff"><label>€ BAD's</label><input type="number" id="f-cane" placeholder="ex: 57.04" min="0" step="0.01"></div>
       <div class="ff"><label>N.º Cancelamentos</label><input type="number" id="f-can" placeholder="ex: 3" min="0" step="1"></div>
       <div class="ff"><label>N.º de Bads</label><input type="number" id="f-bads" placeholder="ex: 1" min="0" step="1"></div>
       <div class="ff"><label>N.º de Voids</label><input type="number" id="f-voids" placeholder="ex: 0" min="0" step="1"></div>
+      <div class="ff"><label>N.º de Extremes</label><input type="number" id="f-extr" placeholder="ex: 2" min="0" step="1"></div>
       <div class="ff"><label>Horas Drivers (h)</label><input type="number" id="f-drv" placeholder="ex: 25.4" min="0" step="0.5"></div>
       <div class="ff"><label>Horas Insiders (h)</label><input type="number" id="f-insh" placeholder="ex: 12" min="0" step="0.5"></div>
       <div class="ff"><label>Horas Gerentes (h)</label><input type="number" id="f-mgrh" placeholder="ex: 8" min="0" step="0.5"></div>
@@ -491,8 +498,13 @@
     <table>
       <thead><tr>
         <th>Data</th><th>Dia</th><th>Faturação</th><th>Pedidos</th><th>Ticket</th>
-        <th>H. Entregadores</th><th>Ped/h</th><th>Entrega</th><th>Cancel.</th>
-        <th>Delivery%</th><th>Agr%</th><th>CarryOut%</th><th>DineIn%</th><th>Online%</th><th>Food%</th><th>Pico</th><th>Notas</th><th></th>
+        <th>Delivery</th><th>Agreg.</th><th>CarryOut</th><th>DineIn</th><th>Online</th>
+        <th>Del.Tot</th><th>TGTG</th>
+        <th>ADT</th><th>Load</th><th>Wait</th><th>Singles%</th>
+        <th>H.Drv</th><th>Ped/h</th><th>H.Ins</th><th>H.Ger</th>
+        <th>FC%</th><th>FC-i%</th><th>Margem%</th>
+        <th>€BAD</th><th>Cancel</th><th>Bads</th><th>Voids</th><th>Extr.</th><th>%Extr</th>
+        <th>Almoço</th><th>Pico</th><th>Notas</th><th></th>
       </tr></thead>
       <tbody id="hist-body"></tbody>
     </table>
@@ -516,6 +528,11 @@
   </div>
   <div class="kpi-g mb-14">
     <div class="kpi" style="border-left:3px solid #3B6D11;"><p class="kpi-lbl">Margem bruta média</p><p class="kpi-val" id="s-mb">—</p><p class="kpi-sub" id="s-mb-s"></p></div>
+  </div>
+
+  <div class="card mb-14" style="border:1px solid var(--border-info);background:linear-gradient(to right, var(--bg-info) 0%, var(--bg-primary) 40%);">
+    <p class="ct">📊 Comparação em tempo real — semana atual vs anterior <span style="font-weight:400;font-size:11px;color:var(--text-secondary);">(mesmos dias já decorridos)</span></p>
+    <div id="s-rt"></div>
   </div>
 
   <div class="g2 mb-14">
@@ -579,6 +596,11 @@
     <div class="kpi" style="border-left:3px solid #3B6D11;"><p class="kpi-lbl">Margem bruta média</p><p class="kpi-val" id="m-mb">—</p><p class="kpi-sub" id="m-mb-s"></p></div>
   </div>
 
+  <div class="card mb-14" style="border:1px solid var(--border-info);background:linear-gradient(to right, var(--bg-info) 0%, var(--bg-primary) 40%);">
+    <p class="ct">📊 Comparação em tempo real — mês actual vs anterior <span style="font-weight:400;font-size:11px;color:var(--text-secondary);">(mesmos dias já decorridos)</span></p>
+    <div id="m-rt"></div>
+  </div>
+
   <div class="card mb-14" id="m-proj-card">
     <p class="ct">Projeção de faturação — fim do mês</p>
     <div id="m-proj"></div>
@@ -597,15 +619,42 @@
   </div>
 
   <div class="card mb-14">
-    <p class="ct">Resumo por mês</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;">
+      <p class="ct" style="margin:0;">Resumo por mês</p>
+      <button class="btn-sm" onclick="showAddHistoricMonth()" style="background:var(--bg-info);color:var(--text-info);border:0.5px solid var(--border-info);font-weight:500;">+ Adicionar mês histórico</button>
+    </div>
+    <p class="card-sub" style="margin:0 0 10px;">Podes acrescentar meses anteriores à criação do dashboard preenchendo apenas os totais agregados.</p>
     <div class="tbl-wrap" style="border:none;margin:0;">
       <table>
         <thead><tr>
           <th>Mês</th><th>Faturação</th><th>vs Ant.</th><th>Pedidos</th><th>vs Ant.</th>
-          <th>Ticket</th><th>Fat/dia</th><th>Ped/dia</th><th>Entrega</th><th>Food%</th>
+          <th>Ticket</th><th>Fat/dia</th><th>Ped/dia</th><th>Entrega</th><th>Food%</th><th></th>
         </tr></thead>
         <tbody id="men-body"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- Modal for adding historical month -->
+  <div id="histm-modal" style="display:none;position:fixed;inset:0;z-index:999;background:rgba(0,0,0,.5);align-items:center;justify-content:center;">
+    <div style="background:var(--bg-primary);border-radius:var(--radius-lg);padding:20px 24px;width:min(560px,92vw);max-height:90vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.25);">
+      <p style="font-size:16px;font-weight:600;margin:0 0 4px;">Adicionar mês histórico</p>
+      <p style="font-size:12px;color:var(--text-secondary);margin:0 0 16px;">Preenche os totais agregados do mês. Estes valores aparecem no resumo mensal e nos gráficos anuais.</p>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
+        <div class="ff"><label>Mês *</label><input type="month" id="hm-month"></div>
+        <div class="ff"><label>Dias com dados</label><input type="number" id="hm-n" placeholder="ex: 30" min="1" max="31" step="1"></div>
+        <div class="ff"><label>Faturação total (€) *</label><input type="number" id="hm-fat" placeholder="ex: 45000" min="0" step="0.01"></div>
+        <div class="ff"><label>Pedidos totais *</label><input type="number" id="hm-ped" placeholder="ex: 2500" min="0" step="1"></div>
+        <div class="ff"><label>Cancelamentos totais</label><input type="number" id="hm-can" placeholder="ex: 45" min="0" step="1"></div>
+        <div class="ff"><label>Entrega média (min)</label><input type="number" id="hm-ent" placeholder="ex: 21.5" min="0" step="0.1"></div>
+        <div class="ff"><label>Food cost médio (%)</label><input type="number" id="hm-fc" placeholder="ex: 27.5" min="0" max="100" step="0.1"></div>
+        <div class="ff"></div>
+      </div>
+      <p id="hm-msg" style="font-size:12px;margin:12px 0 0;min-height:16px;"></p>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;">
+        <button class="btn-sm" onclick="hideAddHistoricMonth()">Cancelar</button>
+        <button class="btn-sm" onclick="saveHistoricMonth()" style="background:#185FA5;color:#fff;border-color:#185FA5;">Guardar</button>
+      </div>
     </div>
   </div>
 
@@ -713,7 +762,8 @@ async function load() {
       drv: r.drv, pico: r.pico, notas: r.notas,
       deltot: r.deltot, tgtg: r.tgtg, loadm: r.loadm, wait: r.wait,
       adtm: r.adtm, sing: r.sing, fci: r.fci, cane: r.cane,
-      bads: r.bads, voids: r.voids, insh: r.insh, mgrh: r.mgrh, lunch: r.lunch
+      bads: r.bads, voids: r.voids, insh: r.insh, mgrh: r.mgrh, extr: r.extr, lunch: r.lunch,
+      hist: r.hist, histN: r.hist_n
     }));
   } catch(e) {
     console.error('Erro ao carregar dados:', e);
@@ -723,10 +773,13 @@ async function load() {
 
 /* ── storage: upsert one record ── */
 async function saveDay(rec) {
+  // Transform camelCase → snake_case for Supabase columns
+  const dbRec = { ...rec };
+  if ('histN' in dbRec) { dbRec.hist_n = dbRec.histN; delete dbRec.histN; }
   await sbFetch(`${TABLE}`, {
     method: 'POST',
     prefer: 'resolution=merge-duplicates',
-    body: rec
+    body: dbRec
   });
   try { _ls.setItem(SK, JSON.stringify(allDays)); } catch(_) {}
 }
@@ -824,12 +877,18 @@ function showTab(id) {
 }
 
 /* ── DASHBOARD ── */
+/* ── Get only daily records (excluding historical month aggregates) ── */
+function dailyDays() {
+  return allDays.filter(r => !r.hist);
+}
+
 function renderDash() {
-  if (!allDays.length) {
+  const daily = dailyDays();
+  if (!daily.length) {
     document.getElementById('insights').innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Sem dados. Clique em "+ Registar dia" para começar.</p>';
     return;
   }
-  const sorted = [...allDays].sort((a,b) => b.date.localeCompare(a.date));
+  const sorted = [...daily].sort((a,b) => b.date.localeCompare(a.date));
   const L7 = sorted.slice(0, 7);
   const P7 = sorted.slice(7, 14);
 
@@ -867,6 +926,44 @@ function renderDash() {
   const avgF  = wF.length ? Math.round(wF.reduce((s,r) => s + r.fc, 0) / wF.length) : null;
   document.getElementById('k-fc').textContent  = avgF ? `${avgF}%` : '—';
   if (avgF) document.getElementById('k-fc-s').innerHTML = colorSpan(avgF, 29, 32, 'dentro do alvo (<30%)', 'atenção', 'acima do alvo');
+
+  // Food Cost Ideal
+  const wFI = L7.filter(r => r.fci > 0);
+  const avgFI = wFI.length ? (wFI.reduce((s,r) => s + r.fci, 0) / wFI.length).toFixed(1) : null;
+  document.getElementById('k-fci').textContent = avgFI ? `${avgFI}%` : '—';
+  if (avgFI !== null && avgF !== null) {
+    const diff = (avgF - parseFloat(avgFI)).toFixed(1);
+    const dc = diff > 0 ? '#A32D2D' : '#3B6D11';
+    document.getElementById('k-fci-s').innerHTML = `<span style="color:${dc};font-size:11px;">Actual ${diff>0?'+':''}${diff}pp vs ideal</span>`;
+  }
+
+  // Load médio (m)
+  const wLd = L7.filter(r => r.loadm > 0);
+  const avgLd = wLd.length ? (wLd.reduce((s,r) => s + r.loadm, 0) / wLd.length).toFixed(1) : null;
+  document.getElementById('k-load').textContent = avgLd ? `${avgLd} m` : '—';
+  if (avgLd) document.getElementById('k-load-s').innerHTML = colorSpan(parseFloat(avgLd), 5, 8, 'dentro do alvo', 'atenção', 'crítico');
+
+  // Wait médio (m)
+  const wWt = L7.filter(r => r.wait > 0);
+  const avgWt = wWt.length ? (wWt.reduce((s,r) => s + r.wait, 0) / wWt.length).toFixed(1) : null;
+  document.getElementById('k-wait').textContent = avgWt ? `${avgWt} m` : '—';
+  if (avgWt) document.getElementById('k-wait-s').innerHTML = colorSpan(parseFloat(avgWt), 3, 5, 'dentro do alvo', 'atenção', 'crítico');
+
+  // % Extremes = extr / delivery total (deltot ou del+agr)
+  const wEx = L7.filter(r => r.extr > 0 && (r.deltot > 0 || (r.del||0)+(r.agr||0) > 0));
+  const extrPct = (() => {
+    if (!wEx.length) return null;
+    const tE = wEx.reduce((s,r) => s + r.extr, 0);
+    const tD = wEx.reduce((s,r) => s + (r.deltot || (r.del||0)+(r.agr||0)), 0);
+    return tD > 0 ? (tE/tD*100).toFixed(1) : null;
+  })();
+  document.getElementById('k-extr').textContent = extrPct !== null ? `${extrPct}%` : '—';
+  if (extrPct !== null) {
+    const ev = parseFloat(extrPct);
+    const ec = ev > 5 ? '#A32D2D' : ev > 2 ? '#BA7517' : '#3B6D11';
+    const el = ev > 5 ? 'acima do limite' : ev > 2 ? 'a monitorizar' : 'dentro do alvo';
+    document.getElementById('k-extr-s').innerHTML = `<span style="color:${ec};font-size:11px;">${el}</span>`;
+  }
 
   // Margem bruta = 100 - food cost
   const margem = avgF !== null ? (100 - avgF).toFixed(1) : null;
@@ -1039,7 +1136,8 @@ function renderAddKPIs(L7) {
     </div>`;
 }
 
-function renderLunch(sorted) {
+function renderLunch(_ignored) {
+  const sorted = dailyDays().sort((a,b) => b.date.localeCompare(a.date));
   // Get last 30 days with lunch values
   const lunchDays = sorted.filter(r => r.lunch > 0).slice(0, 30).reverse();
   const card = document.getElementById('cLunch').closest('.card');
@@ -1164,39 +1262,59 @@ function renderInsights(L7, P7, avgE, totC, ped7, avgF) {
 
 /* ── HISTORY ── */
 function renderHist() {
-  const sorted = [...allDays].sort((a,b) => b.date.localeCompare(a.date));
+  const _dailyOnly = dailyDays();
+  const sorted = [..._dailyOnly].sort((a,b) => b.date.localeCompare(a.date));
   document.getElementById('hist-count').textContent = sorted.length;
   document.getElementById('hist-body').innerHTML = sorted.length
     ? sorted.map(r => {
-        const tick = r.ped > 0 ? (r.fat / r.ped).toFixed(1) : '—';
+        const tick = r.ped > 0 ? (r.fat / r.ped).toFixed(2) : '—';
         const ppe  = r.drv && r.ped ? (r.ped / r.drv).toFixed(1) : '—';
-        const entB = r.ent ? `<span class="b ${r.ent>35?'b-dn':r.ent>30?'b-w':'b-ok'}">${r.ent}m</span>` : '—';
+        const entV = r.adtm || r.ent;
+        const entB = entV ? `<span class="b ${entV>35?'b-dn':entV>30?'b-w':'b-ok'}">${entV}m</span>` : '—';
         const canB = r.can > 3 ? `<span class="b b-w">${r.can}</span>` : (r.can || 0);
+        const delTot = r.deltot || ((r.del||0)+(r.agr||0)) || null;
+        const extrPct = (r.extr > 0 && delTot > 0) ? (r.extr/delTot*100).toFixed(1) : null;
+        const margin = r.fc ? (100 - r.fc).toFixed(1) : null;
         return `<tr>
           <td style="font-weight:500;">${fmtD(r.date)}</td>
           <td>${dowN(r.date)}</td>
-          <td>€${r.fat.toLocaleString('pt-PT')}</td>
-          <td>${r.ped}</td>
+          <td>€${(r.fat||0).toLocaleString('pt-PT')}</td>
+          <td>${r.ped||0}</td>
           <td>€${tick}</td>
+          <td>${r.del ?? '—'}</td>
+          <td>${r.agr ?? '—'}</td>
+          <td>${r.tak ?? '—'}</td>
+          <td>${r.din ?? '—'}</td>
+          <td>${r.onl ?? '—'}</td>
+          <td>${delTot ?? '—'}</td>
+          <td>${r.tgtg ? `€${r.tgtg.toFixed(2)}` : '—'}</td>
+          <td>${entB}</td>
+          <td>${r.loadm != null ? `${r.loadm}m` : '—'}</td>
+          <td>${r.wait  != null ? `${r.wait}m`  : '—'}</td>
+          <td>${r.sing  != null ? `${r.sing}%` : '—'}</td>
           <td>${r.drv || '—'}</td>
           <td>${ppe}</td>
-          <td>${entB}</td>
+          <td>${r.insh || '—'}</td>
+          <td>${r.mgrh || '—'}</td>
+          <td>${r.fc    ? `${r.fc}%`   : '—'}</td>
+          <td>${r.fci   ? `${r.fci}%`  : '—'}</td>
+          <td style="color:${margin && parseFloat(margin) >= 70 ? '#3B6D11' : '#A32D2D'};font-weight:500;">${margin ? `${margin}%` : '—'}</td>
+          <td>${r.cane ? `€${r.cane.toFixed(2)}` : '—'}</td>
           <td>${canB}</td>
-          <td>${r.del   ? `${r.del}%`   : '—'}</td>
-          <td>${r.agr   ? `${r.agr}%`   : '—'}</td>
-          <td>${r.tak   ? `${r.tak}%`   : '—'}</td>
-          <td>${r.din   ? `${r.din}%`   : '—'}</td>
-          <td>${r.onl   ? `${r.onl}%`   : '—'}</td>
-          <td>${r.fc    ? `${r.fc}%`    : '—'}</td>
+          <td>${r.bads ?? '—'}</td>
+          <td>${r.voids ?? '—'}</td>
+          <td>${r.extr ?? '—'}</td>
+          <td style="color:${extrPct && parseFloat(extrPct) > 5 ? '#A32D2D' : parseFloat(extrPct) > 2 ? '#BA7517' : 'inherit'};">${extrPct ? `${extrPct}%` : '—'}</td>
+          <td>${r.lunch ? `€${r.lunch.toFixed(2)}` : '—'}</td>
           <td style="color:var(--text-secondary);font-size:10px;">${formatPico(r.pico)}</td>
-          <td style="color:var(--text-secondary);font-size:11px;">${r.notas || ''}</td>
+          <td style="color:var(--text-secondary);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${(r.notas||'').replace(/"/g,'&quot;')}">${r.notas || ''}</td>
           <td style="white-space:nowrap;">
             <button class="btn-sm" onclick="editDay('${r.date}')">editar</button>
             <button class="btn-sm btn-danger" onclick="delDay('${r.date}')">del</button>
           </td>
         </tr>`;
       }).join('')
-    : '<tr><td colspan="18" style="text-align:center;color:var(--text-secondary);padding:28px;">Sem dados registados.</td></tr>';
+    : '<tr><td colspan="33" style="text-align:center;color:var(--text-secondary);padding:28px;">Sem dados registados.</td></tr>';
 }
 
 /* ── FORM ── */
@@ -1231,6 +1349,7 @@ async function submitDay() {
     voids:  fo('f-voids'),
     insh:   fv('f-insh'),
     mgrh:   fv('f-mgrh'),
+    extr:   fo('f-extr'),
     lunch:  fv('f-lunch')
   };
   const msg = document.getElementById('form-msg');
@@ -1539,7 +1658,7 @@ function setPicoSlots(val) {
 
 function clearForm() {
   ['f-del','f-agr','f-tak','f-din','f-adtm','f-can','f-onl','f-fc','f-drv','f-fat','f-ped','f-notas',
-   'f-deltot','f-tgtg','f-load','f-wait','f-sing','f-fci','f-cane','f-bads','f-voids','f-insh','f-mgrh','f-lunch'
+   'f-deltot','f-tgtg','f-load','f-wait','f-sing','f-fci','f-cane','f-bads','f-voids','f-extr','f-insh','f-mgrh','f-lunch'
   ].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f-date').value = todayStr();
   document.getElementById('f-adt').value  = '';
@@ -1577,6 +1696,7 @@ function editDay(date) {
   document.getElementById('f-voids').value  = r.voids  || '';
   document.getElementById('f-insh').value   = r.insh   || '';
   document.getElementById('f-mgrh').value   = r.mgrh   || '';
+  document.getElementById('f-extr').value   = r.extr   || '';
   document.getElementById('f-lunch').value  = r.lunch  || '';
   calcAdt();
   setPicoSlots(r.pico || '');
@@ -1586,6 +1706,17 @@ function editDay(date) {
 
 
 async function delDay(date) {
+  const rec = allDays.find(d => d.date === date);
+  const fmt = rec ? `${fmtD(date)} (€${(rec.fat||0).toLocaleString('pt-PT')} · ${rec.ped||0} pedidos)` : fmtD(date);
+  // First confirmation
+  if (!confirm(`⚠️ Vais apagar o registo de ${fmt}.\n\nEsta acção é IRREVERSÍVEL. Continuar?`)) return;
+  // Second confirmation — user must type the date
+  const typed = prompt(`Para confirmar, escreve a data do dia a apagar no formato DD/MM/AAAA:\n\n${fmtD(date)}`);
+  if (typed === null) return;
+  if (typed.trim() !== fmtD(date)) {
+    alert('❌ A data introduzida não corresponde. Apagamento cancelado por segurança.');
+    return;
+  }
   try {
     await deleteDay(date);
     allDays = allDays.filter(d => d.date !== date);
@@ -1593,6 +1724,13 @@ async function delDay(date) {
   } catch(e) { alert('Erro ao apagar: ' + e.message); }
 }
 async function clearAll() {
+  if (!confirm(`⚠️ ATENÇÃO: vais apagar TODOS os ${allDays.length} registos.\n\nEsta acção é IRREVERSÍVEL. Continuar?`)) return;
+  const typed = prompt(`Para confirmar, escreve exactamente:\n\nAPAGAR TUDO`);
+  if (typed === null) return;
+  if (typed.trim() !== 'APAGAR TUDO') {
+    alert('❌ Confirmação incorrecta. Apagamento cancelado.');
+    return;
+  }
   try {
     await deleteAll();
     allDays = []; renderHist(); renderDash();
@@ -1609,14 +1747,28 @@ function aggregateByMonth(days) {
   const map = {};
   days.forEach(r => {
     const k = monthKey(r.date);
-    if (!map[k]) map[k] = {fat:0,ped:0,can:0,entS:0,entN:0,fcS:0,fcN:0,n:0};
+    if (!map[k]) map[k] = {fat:0,ped:0,can:0,entS:0,entN:0,fcS:0,fcN:0,n:0, hist:false, histN:0};
     const m = map[k];
-    m.fat += r.fat; m.ped += r.ped; m.can += (r.can||0); m.n++;
-    if (r.ent>0) { m.entS += r.ent; m.entN++; }
-    if (r.fc>0)  { m.fcS  += r.fc;  m.fcN++;  }
+    if (r.hist) {
+      // Historical month record — use its aggregated values as-is
+      m.fat += r.fat || 0;
+      m.ped += r.ped || 0;
+      m.can += r.can || 0;
+      m.hist = true;
+      m.histN = r.histN || 30;
+      if (r.ent > 0) { m.entS += r.ent; m.entN++; }
+      if (r.fc  > 0) { m.fcS  += r.fc;  m.fcN++;  }
+    } else {
+      m.fat += r.fat; m.ped += r.ped; m.can += (r.can||0); m.n++;
+      const entVal = r.adtm || r.ent;
+      if (entVal > 0) { m.entS += entVal; m.entN++; }
+      if (r.fc>0)     { m.fcS  += r.fc;   m.fcN++;  }
+    }
   });
   return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>({
-    key:k, fat:v.fat, ped:v.ped, can:v.can, n:v.n,
+    key:k, fat:v.fat, ped:v.ped, can:v.can,
+    n: v.hist ? v.histN : v.n,
+    hist: v.hist,
     avgEnt: v.entN ? Math.round(v.entS/v.entN) : null,
     avgFc:  v.fcN  ? Math.round(v.fcS/v.fcN)   : null,
   }));
@@ -1628,7 +1780,8 @@ function aggregateByYear(days) {
     const k = yearKey(r.date);
     if (!map[k]) map[k] = {fat:0,ped:0,n:0,months:new Set(),fcS:0,fcN:0};
     const m = map[k];
-    m.fat += r.fat; m.ped += r.ped; m.n++;
+    m.fat += r.fat || 0; m.ped += r.ped || 0;
+    m.n += r.hist ? (r.histN || 30) : 1;
     m.months.add(monthKey(r.date));
     if (r.fc>0)  { m.fcS  += r.fc;  m.fcN++;  }
   });
@@ -1692,14 +1845,83 @@ function aggregateByWeek(days) {
 }
 
 /* ── SEMANAL ── */
+/* ── Real-time weekly comparison — compares same days-elapsed in current vs previous week ── */
+function renderSemanalRT(curW, prevW) {
+  const el = document.getElementById('s-rt');
+  if (!el) return;
+  if (!prevW) { el.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Sem semana anterior para comparar.</p>'; return; }
+
+  // Days elapsed in current week (Monday=1..Sunday=7)
+  const curWDays = dailyDays().filter(r=>weekKey(r.date)===curW.key);
+  if (!curWDays.length) { el.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Ainda sem dias registados nesta semana.</p>'; return; }
+  const daysElapsed = curWDays.length;
+
+  // For previous week, take the same number of first days (Mon, Tue, ...)
+  const prevWDays = dailyDays().filter(r=>weekKey(r.date)===prevW.key)
+    .sort((a,b)=>a.date.localeCompare(b.date))
+    .slice(0, daysElapsed);
+
+  // Sums so far
+  const sum = arr => ({
+    fat: arr.reduce((s,r)=>s+(r.fat||0),0),
+    ped: arr.reduce((s,r)=>s+(r.ped||0),0),
+    del: arr.reduce((s,r)=>s+(r.del||0),0),
+    agr: arr.reduce((s,r)=>s+(r.agr||0),0),
+    tak: arr.reduce((s,r)=>s+(r.tak||0),0),
+    din: arr.reduce((s,r)=>s+(r.din||0),0),
+  });
+  const c = sum(curWDays), p = sum(prevWDays);
+
+  // Row helper
+  const row = (lbl, cv, pv, fmt) => {
+    const d = pv > 0 ? Math.round((cv-pv)/pv*100) : null;
+    const dc = d === null ? '#5F5E5A' : d > 0 ? '#3B6D11' : d < 0 ? '#A32D2D' : '#5F5E5A';
+    const arrow = d === null ? '—' : d > 0 ? '▲' : d < 0 ? '▼' : '→';
+    const dStr = d === null ? '—' : `${d>0?'+':''}${d}%`;
+    return `<tr style="border-top:0.5px solid var(--border-light);">
+      <td style="padding:8px 10px;font-size:12px;">${lbl}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:500;font-size:13px;">${fmt(cv)}</td>
+      <td style="padding:8px 10px;text-align:right;color:var(--text-secondary);font-size:12px;">${fmt(pv)}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${dc};font-size:12px;">${arrow} ${dStr}</td>
+    </tr>`;
+  };
+
+  el.innerHTML = `
+    <p style="font-size:11px;color:var(--text-secondary);margin:2px 0 8px;">
+      ${daysElapsed} dia${daysElapsed>1?'s':''} decorrido${daysElapsed>1?'s':''} nesta semana · comparação com os mesmos ${daysElapsed} primeiros dias da semana anterior
+    </p>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:0.5px solid var(--border-mid);">
+          <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Indicador</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Actual</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Sem. ant.</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Δ</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${row('Faturação', c.fat, p.fat, v => `€${v.toLocaleString('pt-PT')}`)}
+        ${row('Pedidos',   c.ped, p.ped, v => v.toString())}
+        ${row('Ticket médio', c.ped>0?c.fat/c.ped:0, p.ped>0?p.fat/p.ped:0, v => `€${v.toFixed(2)}`)}
+        ${row('Delivery próprio', c.del, p.del, v => v.toString())}
+        ${row('Agregadores', c.agr, p.agr, v => v.toString())}
+        ${row('Carry Out', c.tak, p.tak, v => v.toString())}
+        ${row('Dine In', c.din, p.din, v => v.toString())}
+      </tbody>
+    </table>`;
+}
+
 function renderSemanal() {
-  const weeks = aggregateByWeek(allDays);
+  const weeks = aggregateByWeek(dailyDays());
   if (!weeks.length) return;
   const curWk  = weekKey(todayStr());
   const curW   = weeks.find(w=>w.key===curWk) || weeks[weeks.length-1];
   const curIdx = weeks.indexOf(curW);
   const prevW  = curIdx > 0 ? weeks[curIdx-1] : null;
   const dark=isDark(), tc=dark?'#B4B2A9':'#888780', gc=dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.05)';
+
+  // ── REAL-TIME COMPARISON — same-days elapsed vs previous week
+  renderSemanalRT(curW, prevW);
 
   // KPIs
   document.getElementById('s-fat').textContent  = `€${curW.fat.toLocaleString('pt-PT')}`;
@@ -1932,6 +2154,76 @@ function renderProjection(curM, months, today) {
 }
 
 /* ── MENSAL ── */
+/* ── Real-time monthly comparison — day-of-month sums vs previous month ── */
+function renderMensalRT(curM, prevM, today) {
+  const el = document.getElementById('m-rt');
+  if (!el) return;
+  if (!prevM) { el.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Sem mês anterior para comparar.</p>'; return; }
+
+  const dayOfMonth = parseInt(today.slice(8), 10);
+  const curMonthKey = curM.key;
+  const prevMonthKey = prevM.key;
+
+  // Current month days already registered
+  const curMDays = dailyDays().filter(r => monthKey(r.date) === curMonthKey);
+  if (!curMDays.length) { el.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);">Ainda sem dias registados neste mês.</p>'; return; }
+
+  // For previous month, take the same days-of-month up to dayOfMonth
+  const prevMDays = dailyDays().filter(r => {
+    if (monthKey(r.date) !== prevMonthKey) return false;
+    return parseInt(r.date.slice(8), 10) <= dayOfMonth;
+  });
+
+  const sum = arr => ({
+    fat: arr.reduce((s,r)=>s+(r.fat||0),0),
+    ped: arr.reduce((s,r)=>s+(r.ped||0),0),
+    del: arr.reduce((s,r)=>s+(r.del||0),0),
+    agr: arr.reduce((s,r)=>s+(r.agr||0),0),
+    tak: arr.reduce((s,r)=>s+(r.tak||0),0),
+    din: arr.reduce((s,r)=>s+(r.din||0),0),
+    n:   arr.length
+  });
+  const c = sum(curMDays), p = sum(prevMDays);
+
+  const row = (lbl, cv, pv, fmt) => {
+    const d = pv > 0 ? Math.round((cv-pv)/pv*100) : null;
+    const dc = d === null ? '#5F5E5A' : d > 0 ? '#3B6D11' : d < 0 ? '#A32D2D' : '#5F5E5A';
+    const arrow = d === null ? '—' : d > 0 ? '▲' : d < 0 ? '▼' : '→';
+    const dStr = d === null ? '—' : `${d>0?'+':''}${d}%`;
+    return `<tr style="border-top:0.5px solid var(--border-light);">
+      <td style="padding:8px 10px;font-size:12px;">${lbl}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:500;font-size:13px;">${fmt(cv)}</td>
+      <td style="padding:8px 10px;text-align:right;color:var(--text-secondary);font-size:12px;">${fmt(pv)}</td>
+      <td style="padding:8px 10px;text-align:right;font-weight:600;color:${dc};font-size:12px;">${arrow} ${dStr}</td>
+    </tr>`;
+  };
+
+  el.innerHTML = `
+    <p style="font-size:11px;color:var(--text-secondary);margin:2px 0 8px;">
+      ${c.n} dia${c.n>1?'s':''} registado${c.n>1?'s':''} em ${fmtMonthFull(curMonthKey)} · comparação com os primeiros ${p.n} dia${p.n>1?'s':''} de ${fmtMonthFull(prevMonthKey)}
+    </p>
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="border-bottom:0.5px solid var(--border-mid);">
+          <th style="padding:6px 10px;text-align:left;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Indicador</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Actual</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Mês ant.</th>
+          <th style="padding:6px 10px;text-align:right;font-size:10px;color:var(--text-secondary);font-weight:500;text-transform:uppercase;">Δ</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${row('Faturação', c.fat, p.fat, v => `€${v.toLocaleString('pt-PT')}`)}
+        ${row('Pedidos',   c.ped, p.ped, v => v.toString())}
+        ${row('Ticket médio', c.ped>0?c.fat/c.ped:0, p.ped>0?p.fat/p.ped:0, v => `€${v.toFixed(2)}`)}
+        ${row('Fat./dia', c.n>0?c.fat/c.n:0, p.n>0?p.fat/p.n:0, v => `€${Math.round(v).toLocaleString('pt-PT')}`)}
+        ${row('Delivery próprio', c.del, p.del, v => v.toString())}
+        ${row('Agregadores', c.agr, p.agr, v => v.toString())}
+        ${row('Carry Out', c.tak, p.tak, v => v.toString())}
+        ${row('Dine In', c.din, p.din, v => v.toString())}
+      </tbody>
+    </table>`;
+}
+
 function renderMensal() {
   const MN = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const months = aggregateByMonth(allDays);
@@ -1944,6 +2236,9 @@ function renderMensal() {
   const curM  = months.find(m => m.key === curMk) || months[months.length-1];
   const curIdx = months.indexOf(curM);
   const prevM  = curIdx > 0 ? months[curIdx-1] : null;
+
+  // ── REAL-TIME COMPARISON — same-days elapsed vs previous month
+  renderMensalRT(curM, prevM, today);
 
   // KPIs
   document.getElementById('m-fat').textContent  = `€${curM.fat.toLocaleString('pt-PT')}`;
@@ -2041,8 +2336,12 @@ function renderMensal() {
     const fatD = p ? pctDiffInline(m.fat, p.fat) : '—';
     const pedD = p ? pctDiffInline(m.ped, p.ped) : '—';
     const isCur = m.key === curMk;
+    const histBadge = m.hist ? ' <span style="font-size:9px;background:#BA7517;color:#fff;padding:1px 5px;border-radius:3px;font-weight:500;">HIST</span>' : '';
+    const actions = m.hist
+      ? `<button class="btn-sm btn-danger" onclick="delHistoricMonth('${m.key}')" title="Apagar mês histórico">del</button>`
+      : '';
     return `<tr${isCur?' style="background:var(--bg-info);"':''}>
-      <td style="font-weight:500;">${fmtMonthFull(m.key)}${isCur?' <span style="font-size:10px;color:var(--text-info);">atual</span>':''}</td>
+      <td style="font-weight:500;">${fmtMonthFull(m.key)}${histBadge}${isCur?' <span style="font-size:10px;color:var(--text-info);">atual</span>':''}</td>
       <td>€${m.fat.toLocaleString('pt-PT')}</td>
       <td>${fatD}</td>
       <td>${m.ped}</td>
@@ -2052,8 +2351,19 @@ function renderMensal() {
       <td>${Math.round(m.ped/m.n)}</td>
       <td>${m.avgEnt?`<span class="b ${m.avgEnt>35?'b-dn':m.avgEnt>30?'b-w':'b-ok'}">${m.avgEnt}m</span>`:'—'}</td>
       <td>${m.avgFc?`${m.avgFc}%`:'—'}</td>
+      <td>${actions}</td>
     </tr>`;
   }).join('');
+}
+
+async function delHistoricMonth(monthKey) {
+  if (!confirm(`⚠️ Vais apagar o mês histórico ${monthKey}. Continuar?`)) return;
+  const date = `${monthKey}-15`;
+  try {
+    await deleteDay(date);
+    allDays = allDays.filter(d => !(d.date === date && d.hist));
+    renderMensal(); renderAnual();
+  } catch(e) { alert('Erro: ' + e.message); }
 }
 
 /* ── ANUAL ── */
@@ -2184,6 +2494,46 @@ function pctDiffInline(v,p) {
   return `<span style="color:${c};font-weight:500;">${d>0?'+':''}${d}%</span>`;
 }
 
+/* ── Historical month entry ── */
+function showAddHistoricMonth() {
+  document.getElementById('histm-modal').style.display = 'flex';
+  document.getElementById('hm-msg').textContent = '';
+}
+function hideAddHistoricMonth() {
+  document.getElementById('histm-modal').style.display = 'none';
+  ['hm-month','hm-n','hm-fat','hm-ped','hm-can','hm-ent','hm-fc'].forEach(id => document.getElementById(id).value = '');
+}
+async function saveHistoricMonth() {
+  const month = document.getElementById('hm-month').value; // "2025-11"
+  const fat = parseFloat(document.getElementById('hm-fat').value);
+  const ped = parseInt(document.getElementById('hm-ped').value);
+  const msg = document.getElementById('hm-msg');
+  if (!month || isNaN(fat) || isNaN(ped) || fat <= 0 || ped <= 0) {
+    msg.innerHTML = '<span style="color:#A32D2D;">Preenche mês, faturação e pedidos.</span>';
+    return;
+  }
+  const n = parseInt(document.getElementById('hm-n').value) || 30;
+  const can = parseInt(document.getElementById('hm-can').value) || 0;
+  const ent = parseFloat(document.getElementById('hm-ent').value) || null;
+  const fc = parseFloat(document.getElementById('hm-fc').value) || null;
+  // Use day 15 of the month as the anchor date + hist flag
+  const date = `${month}-15`;
+  // Check if a historical record for this month already exists
+  const existing = allDays.find(d => d.date === date && d.hist);
+  if (existing && !confirm(`Já existe um registo histórico para ${month}. Substituir?`)) return;
+  const rec = { date, fat, ped, can, ent, fc, hist: true, histN: n, notas: 'Mês histórico agregado' };
+  msg.innerHTML = '<span style="color:#BA7517;">A guardar...</span>';
+  try {
+    await saveDay(rec);
+    const idx = allDays.findIndex(d => d.date === date);
+    if (idx >= 0) allDays[idx] = rec; else allDays.push(rec);
+    msg.innerHTML = '<span style="color:#3B6D11;">✓ Mês histórico guardado.</span>';
+    setTimeout(() => { hideAddHistoricMonth(); renderMensal(); renderAnual(); }, 800);
+  } catch(e) {
+    msg.innerHTML = `<span style="color:#A32D2D;">Erro: ${e.message}</span>`;
+  }
+}
+
 // Format pico: compact the selected slots into readable ranges
 function formatPico(val) {
   if (!val) return '—';
@@ -2209,14 +2559,28 @@ function formatPico(val) {
 
 /* ── CSV export ── */
 function exportCSV() {
-  const hdr = 'Data,Dia,Faturação,Pedidos,Ticket,H.Entregadores,Ped/h,Entrega(min),Cancelamentos,Delivery,Agr,CarryOut,DineIn,Online,FoodCost%,Pico,Notas';
+  const hdr = 'Data,Dia,Tipo,Faturação,Pedidos,Ticket,DeliveryPróp,Agregadores,CarryOut,DineIn,Online,DeliveryTotal,TGTG,ADT(min),Load(min),Wait(min),Singles%,H.Drivers,Ped/h,H.Insiders,H.Gerentes,FC-Actual%,FC-Ideal%,Margem%,€BADs,NºCancel,NºBads,NºVoids,NºExtremes,%Extremes,€Almoço,Pico,Notas';
   const rows = [...allDays].sort((a,b) => b.date.localeCompare(a.date)).map(r => {
-    const tick = r.ped > 0 ? (r.fat / r.ped).toFixed(1) : '';
-    const ppe  = r.drv && r.ped ? (r.ped / r.drv).toFixed(1) : '';
-    return [r.date, dowN(r.date), r.fat, r.ped, tick, r.drv||'', ppe,
-            r.ent||'', r.can||0, r.del||'', r.agr||'', r.tak||'', r.din||'',
-            r.onl||'', r.fc||'',
-            r.pico||'', `"${(r.notas||'').replace(/"/g,"'")}"`].join(',');
+    const tick   = r.ped > 0 ? (r.fat / r.ped).toFixed(2) : '';
+    const ppe    = r.drv && r.ped ? (r.ped / r.drv).toFixed(1) : '';
+    const entV   = r.adtm || r.ent;
+    const delTot = r.deltot || ((r.del||0)+(r.agr||0)) || '';
+    const extPct = (r.extr > 0 && delTot > 0) ? (r.extr/delTot*100).toFixed(1) : '';
+    const margin = r.fc ? (100 - r.fc).toFixed(1) : '';
+    const tipo   = r.hist ? 'MÊS-HIST' : 'DIA';
+    return [
+      r.date, r.hist ? '' : dowN(r.date), tipo,
+      r.fat || 0, r.ped || 0, tick,
+      r.del ?? '', r.agr ?? '', r.tak ?? '', r.din ?? '', r.onl ?? '',
+      delTot, r.tgtg || '',
+      entV || '', r.loadm || '', r.wait || '', r.sing ?? '',
+      r.drv || '', ppe, r.insh || '', r.mgrh || '',
+      r.fc || '', r.fci || '', margin,
+      r.cane || '', r.can || 0, r.bads ?? '', r.voids ?? '',
+      r.extr ?? '', extPct, r.lunch || '',
+      r.pico || '',
+      `"${(r.notas||'').replace(/"/g,"'")}"`
+    ].join(',');
   });
   const blob = new Blob([[hdr, ...rows].join('\n')], {type:'text/csv;charset=utf-8'});
   const a = document.createElement('a');
